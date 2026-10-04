@@ -1,0 +1,15 @@
+Splněno – Implementoval jsem základní analytické transformace (posun, změnu měřítka a rotaci kolem osy Y) bez použití matic přímo ve vertex shaderu (transform.vert) a jejich parametry jsem zapouzdřil do třídy Transformation.
+
+Splněno – Ve třídě ShaderProgram jsem vytvořil přetížené metody setUniform pro různé datové typy a vektory s kontrolou existence uniformní proměnné v programu.
+
+Splněno – Vytvořil jsem třídu Scene pro správu a vykreslování objektů (DrawableObject) a v třídě Application jsem implementoval plynulé přepínání mezi scénami pomocí numerických kláves 1, 2, 3 a 4.
+
+Splněno – Vytvořil jsem 4 testovací scény: 1) trojúhelník, 2) kulička (s absolutními hodnotami normál jako barvou), 3) les a 4) 3D model mého loginu.
+
+Splněno – Sestavil jsem scénu lesa s více než 10 stromy (14 ks), více než 10 keři (12 ks), sluncem umístěným na obloze nad korunami stromů, rovinou terénu a dárkem.
+
+Splněno – Upravil jsem funkci main podle požadavků přednášky na přehledné volání fází životního cyklu aplikace (initialization, createShaders, createModels, createScenes, run) bez procedurální logiky.
+
+Splněno – Vytvořil jsem vlastní 3D model loginu (zha0067.h), který jsem vložil do samostatné 4. scény a zároveň přidal do rohu ostatních scén jako podpis.
+
+Splněno – Zrefaktoroval jsem kód podle přednáškové objektové architektury (Application $\to$ Scene -> DrawableObject -> Model / ShaderProgram / Transformation) a vypracoval kompletní UML diagram tříd se všemi proměnnými, metodami a vazbami. 
