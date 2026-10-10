@@ -169,10 +169,10 @@
     <None Include="shaders\basic.vert" />
     <None Include="shaders\bushes.vert" />
     <None Include="shaders\color_uniform.frag" />
-    <None Include="shaders\gift.vert" />
+    <None Include="shaders\planet.frag" />
+    <None Include="shaders\planet.vert" />
     <None Include="shaders\sphere.frag" />
     <None Include="shaders\sphere.vert" />
-    <None Include="shaders\sphere_abs.frag" />
     <None Include="shaders\transform.vert" />
   </ItemGroup>
   <ItemGroup>

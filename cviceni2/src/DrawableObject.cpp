@@ -1,7 +1,7 @@
 /**
  * @file DrawableObject.cpp
  * @author Student (login: ZHA0067)
- * @brief Implementation of drawing routines and parameter dispatching to GPU.
+ * @brief Implementation of DrawableObject rendering using Transformation getters.
  */
 #include "DrawableObject.h"
 

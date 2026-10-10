@@ -5,7 +5,7 @@
  */
 #include "Scene.h"
 
-Scene::Scene(const std::string& sceneName)
+Scene::Scene(const std::string& sceneName) 
     : name(sceneName), viewMatrix(glm::mat4(1.0f)), projectMatrix(glm::mat4(1.0f)) {}
 
 Scene::~Scene() {
