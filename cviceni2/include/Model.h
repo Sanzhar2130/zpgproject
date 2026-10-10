@@ -12,6 +12,8 @@ public:
     Model(const float* vertices, GLsizeiptr dataSize, GLsizei count);
     ~Model();
 
+    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor);
+
     void draw() const;
     GLuint getVAO() const;
     GLsizei getVertexCount() const;

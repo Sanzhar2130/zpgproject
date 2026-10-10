@@ -104,7 +104,7 @@
     <None Include="shaders\bushes.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\planet.vert">
+    <None Include="shaders\vertex_color.vert">
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\color_uniform.frag">
@@ -116,7 +116,7 @@
     <None Include="shaders\abs_normals.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\planet.frag">
+    <None Include="shaders\vertex_color.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

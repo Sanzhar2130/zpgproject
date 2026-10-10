@@ -18,22 +18,17 @@ private:
     ShaderProgram* shaderProgram;
     std::shared_ptr<Transformation> transformation;
     glm::vec3 color;
-    bool isWatermark;
 
 public:
     DrawableObject(Model* m, ShaderProgram* sp,
         std::shared_ptr<Transformation> t = nullptr,
         const glm::vec3& c = glm::vec3(1.0f));
-    ~DrawableObject();
 
     void draw() const;
 
-    void setTransformation(std::shared_ptr<Transformation> t);
-    std::shared_ptr<Transformation> getTransformation() const;
+    void setTransformation(std::shared_ptr<Transformation> t) { transformation = t; }
+    std::shared_ptr<Transformation> getTransformation() const { return transformation; }
 
-    void setColor(const glm::vec3& c);
-    glm::vec3 getColor() const;
-
-    void setWatermark(bool watermark);
-    bool getWatermark() const;
+    void setColor(const glm::vec3& c) { color = c; }
+    glm::vec3 getColor() const { return color; }
 };

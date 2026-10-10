@@ -48,11 +48,7 @@ GLuint ShaderProgram::getId() const {
 }
 
 GLint ShaderProgram::getUniformLocation(const std::string& name) const {
-    GLint location = glGetUniformLocation(programId, name.c_str());
-    if (location == -1) {
-        std::cerr << "Warning: Uniform '" << name << "' nebyl v shaderu nalezen (-1)!" << std::endl;
-    }
-    return location;
+    return glGetUniformLocation(programId, name.c_str());
 }
 
 void ShaderProgram::setUniform(const std::string& name, float value) const {

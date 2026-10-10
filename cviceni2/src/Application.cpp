@@ -7,7 +7,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "../models/sun.h"
 #include "../models/earth.h"
@@ -20,9 +19,9 @@
 #include "../models/zha0067.h"
 
 static const float triangleVertices[] = {
-    -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,
-     0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f
+     0.0f,  0.55f, 0.0f,   1.0f, 0.0f, 0.0f,
+    -0.55f, -0.45f, 0.0f,  0.0f, 1.0f, 0.0f,
+     0.55f, -0.45f, 0.0f,  0.0f, 0.0f, 1.0f
 };
 
 void Application::error_callback(int error, const char* description) {
@@ -41,27 +40,19 @@ void Application::window_size_callback(GLFWwindow* window, int width, int height
 }
 
 Application::Application()
-    : window(nullptr), windowWidth(800), windowHeight(600), activeSceneIndex(4) {}
+    : window(nullptr), windowWidth(1024), windowHeight(768), activeSceneIndex(0) {}
 
 Application::~Application() {
-    for (Scene* s : scenes) {
-        delete s;
-    }
+    for (Scene* s : scenes) delete s;
     scenes.clear();
 
-    for (Model* m : models) {
-        delete m;
-    }
+    for (Model* m : models) delete m;
     models.clear();
 
-    for (ShaderProgram* sp : shaders) {
-        delete sp;
-    }
+    for (ShaderProgram* sp : shaders) delete sp;
     shaders.clear();
 
-    if (window) {
-        glfwDestroyWindow(window);
-    }
+    if (window) glfwDestroyWindow(window);
     glfwTerminate();
 }
 
@@ -78,7 +69,7 @@ void Application::initialization() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(windowWidth, windowHeight, "ZPG Project - Transformations (ZHA0067)", nullptr, nullptr);
+    window = glfwCreateWindow(windowWidth, windowHeight, "ZPG (ZHA0067)", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -98,200 +89,281 @@ void Application::initialization() {
     }
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
-    std::cout << "Vendor:         " << glGetString(GL_VENDOR) << std::endl;
-    std::cout << "Renderer:       " << glGetString(GL_RENDERER) << std::endl;
     std::cout << "GLSL Version:   " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
     glEnable(GL_DEPTH_TEST);
 }
 
 void Application::createShaders() {
-    Shader basicVert(GL_VERTEX_SHADER, "shaders/basic.vert");
-    Shader basicFrag(GL_FRAGMENT_SHADER, "shaders/basic.frag");
-    shaders.push_back(new ShaderProgram(basicVert, basicFrag));
+    for (ShaderProgram* sp : shaders) {
+        delete sp;
+    }
+    shaders.clear();
 
-    Shader transVert(GL_VERTEX_SHADER, "shaders/transform.vert");
-    Shader absNormFrag(GL_FRAGMENT_SHADER, "shaders/abs_normals.frag");
-    shaders.push_back(new ShaderProgram(transVert, absNormFrag));
+    Shader vertColor(GL_VERTEX_SHADER, "shaders/vertex_color.vert");
+    Shader fragColor(GL_FRAGMENT_SHADER, "shaders/vertex_color.frag");
 
-    Shader colorFrag(GL_FRAGMENT_SHADER, "shaders/color_uniform.frag");
-    shaders.push_back(new ShaderProgram(transVert, colorFrag));
+    shaders.push_back(new ShaderProgram(vertColor, fragColor));
 
-    Shader planetVert(GL_VERTEX_SHADER, "shaders/planet.vert");
-    Shader planetFrag(GL_FRAGMENT_SHADER, "shaders/planet.frag");
-    shaders.push_back(new ShaderProgram(planetVert, planetFrag));
+    Shader vertNormal(GL_VERTEX_SHADER, "shaders/transform.vert");
+
+    Shader fragAbsNormal(GL_FRAGMENT_SHADER, "shaders/abs_normals.frag");
+
+    shaders.push_back(new ShaderProgram(vertNormal, fragAbsNormal));
+
+    Shader fragUniformColor(GL_FRAGMENT_SHADER, "shaders/color_uniform.frag");
+
+    shaders.push_back(new ShaderProgram(vertNormal, fragUniformColor));
 }
+
 
 void Application::createModels() {
     models.push_back(new Model(triangleVertices, sizeof(triangleVertices), 3));
+
     models.push_back(new Model(sphere, sizeof(sphere), 2880));
+
     models.push_back(new Model(plain, sizeof(plain), 6));
+
     models.push_back(new Model(tree, sizeof(tree), 92814));
+
     models.push_back(new Model(bushes, sizeof(bushes), 8730));
+
     models.push_back(new Model(gift, sizeof(gift), 66624));
+
     models.push_back(new Model(zha0067, sizeof(zha0067), 1776));
 
-    models.push_back(new Model(sun, sizeof(sun), static_cast<GLsizei>(sizeof(sun) / (6 * sizeof(float)))));
-    models.push_back(new Model(earth, sizeof(earth), static_cast<GLsizei>(sizeof(earth) / (6 * sizeof(float)))));
-    models.push_back(new Model(moon, sizeof(moon), static_cast<GLsizei>(sizeof(moon) / (6 * sizeof(float)))));
+    models.push_back(new Model(sun, sizeof(sun), 11520, true));
+    models.push_back(new Model(earth, sizeof(earth), 11520, true));
+    models.push_back(new Model(moon, sizeof(moon), 11520, true));
 }
 
 void Application::addWatermark(Scene* scene) {
-    if (!scene) return;
+    auto wmComp = std::make_shared<CompositeTransformation>();
+    std::string name = scene->getName();
 
-    auto watermarkComposite = std::make_shared<CompositeTransformation>();
-    watermarkComposite->add(std::make_shared<Translation>(2.2f, 1.8f, -1.0f));
-    watermarkComposite->add(std::make_shared<Scale>(0.25f));
+    if (name.find("Solar") != std::string::npos || name.find("soustava") != std::string::npos) {
+        wmComp->add(std::make_shared<Rotation>(glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        wmComp->add(std::make_shared<Translation>(11.5f, -7.5f, 3.5f));
+        wmComp->add(std::make_shared<Scale>(1.55f, 1.55f, 0.001f));
+    }
+    else if (name.find("Les") != std::string::npos || name.find("Forest") != std::string::npos) {
+        // =====================================================================
+        // Сцена 3: Лес (камера на (0, 2, 6) с наклоном вниз)
+        // =====================================================================
+        // 1. Поворот навстречу лучу зрения камеры, чтобы текст был плоским и четким
+        wmComp->add(std::make_shared<Rotation>(glm::radians(-18.5f), glm::vec3(1.0f, 0.0f, 0.0f)));
+        // 2. Смещение в правый нижний угол экрана перед платформой
+        wmComp->add(std::make_shared<Translation>(2.2f, -0.15f, 2.6f));
+        // 3. Увеличенный масштаб под дистанцию 6 единиц
+        wmComp->add(std::make_shared<Scale>(0.42f, 0.42f, 0.001f));
+    }
+    else {
+        // =====================================================================
+        // Сцены 1 и 2: Треугольник и Сфера (камера на Z = 2.5)
+        // =====================================================================
+        wmComp->add(std::make_shared<Translation>(1.05f, -0.75f, 0.0f));
+        wmComp->add(std::make_shared<Scale>(0.18f, 0.18f, 0.001f));
+    }
 
-    DrawableObject* watermarkObj = new DrawableObject(models[6], shaders[1], watermarkComposite);
-    watermarkObj->setWatermark(true);
-    scene->addObject(watermarkObj);
+    // Однородная заливка бирюзовым цветом шейдером shaders[2] убирает артефакты нормалей[cite: 44]
+    scene->addObject(new DrawableObject(models[6], shaders[2], wmComp, glm::vec3(0.0f, 0.8f, 1.0f)));
 }
 
 void Application::createScenes() {
-    Scene* scene1 = new Scene("Triangle - Matrix Composite");
+    // =========================================================================
+    // СЦЕНА 1: Базовый треугольник (Triangle)
+    // =========================================================================
+    Scene* scene1 = new Scene("1: Trojuhelnik");
     auto triComp = std::make_shared<CompositeTransformation>();
-    triComp->add(std::make_shared<Translation>(0.0f, 0.0f, 0.0f));
-    triComp->add(std::make_shared<Rotation>(glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-    triComp->add(std::make_shared<Scale>(1.2f));
+    triComp->add(std::make_shared<Scale>(1.0f));
     scene1->addObject(new DrawableObject(models[0], shaders[0], triComp));
     addWatermark(scene1);
     scenes.push_back(scene1);
 
-    Scene* scene2 = new Scene("Sphere - Normal Shading");
+    // =========================================================================
+    // СЦЕНА 2: Сфера с градиентом нормалей (Sphere)
+    // =========================================================================
+    Scene* scene2 = new Scene("2: Koule");
     auto sphereComp = std::make_shared<CompositeTransformation>();
-    sphereComp->add(std::make_shared<Scale>(1.0f));
+    sphereComp->add(std::make_shared<Scale>(0.85f));
     scene2->addObject(new DrawableObject(models[1], shaders[1], sphereComp));
     addWatermark(scene2);
     scenes.push_back(scene2);
 
-    Scene* scene3 = new Scene("Forest Landscape");
+    // =========================================================================
+    // СЦЕНА 3: Наполненный 3D-лес (Forest)
+    // =========================================================================
+    // =========================================================================
+    // СЦЕНА 3: Наполненный 3D-лес на платформе
+    // =========================================================================
+    Scene* scene3 = new Scene("3: Les");
 
+    // 1. Зеленая платформа земли (plain)[cite: 44]
     auto plainComp = std::make_shared<CompositeTransformation>();
-    plainComp->add(std::make_shared<Translation>(0.0f, -0.6f, 0.0f));
-    plainComp->add(std::make_shared<Scale>(3.0f));
-    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.2f, 0.5f, 0.2f)));
+    plainComp->add(std::make_shared<Translation>(0.0f, -0.65f, -0.9f));
+    plainComp->add(std::make_shared<Scale>(4.8f, 1.0f, 4.2f));
+    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.22f, 0.52f, 0.22f)));
 
+    // 2. Солнце высоко в небе справа (полностью над деревьями)[cite: 44]
     auto forestSunComp = std::make_shared<CompositeTransformation>();
-    forestSunComp->add(std::make_shared<Translation>(1.5f, 2.0f, -1.0f));
-    forestSunComp->add(std::make_shared<Scale>(0.35f));
-    scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.9f, 0.1f)));
+    forestSunComp->add(std::make_shared<Translation>(2.35f, 1.95f, -1.0f)); // поднято выше крон
+    forestSunComp->add(std::make_shared<Scale>(0.58f));                     // крупный видимый диск
+    scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.15f)));
 
-    auto giftComp = std::make_shared<CompositeTransformation>();
-    giftComp->add(std::make_shared<Translation>(0.0f, -0.4f, 0.5f));
-    giftComp->add(std::make_shared<Scale>(0.5f));
-    scene3->addObject(new DrawableObject(models[5], shaders[2], giftComp, glm::vec3(0.85f, 0.15f, 0.15f)));
-
-    float treeX[] = { -2.2f, -1.8f, -1.4f, -1.0f, -0.6f, -0.2f, 0.2f, 0.6f, 1.0f, 1.4f, 1.8f, 2.2f, -0.9f, 0.9f };
+    // 3. 14 деревьев по ширине поляны[cite: 44]
+    float treeX[] = { -1.85f, -1.60f, -1.35f, -1.10f, -0.85f, -0.60f, -0.35f,
+                      -0.10f,  0.15f,  0.40f,  0.65f,  0.90f,  1.10f,  1.25f };
     for (int i = 0; i < 14; i++) {
         auto treeComp = std::make_shared<CompositeTransformation>();
-        float z = (i % 2 == 0) ? -1.2f : -0.6f;
-        float s = (i % 2 == 0) ? 0.35f : 0.45f;
-        treeComp->add(std::make_shared<Translation>(treeX[i], -0.6f, z));
+        float z = (i % 2 == 0) ? -1.25f : -0.95f;
+        float y = (i % 2 == 0) ? -0.55f : -0.58f;
+        float s = (i % 2 == 0) ? 0.34f : 0.37f;
+
+        treeComp->add(std::make_shared<Translation>(treeX[i], y, z));
         treeComp->add(std::make_shared<Rotation>(glm::radians(i * 25.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         treeComp->add(std::make_shared<Scale>(s));
-        scene3->addObject(new DrawableObject(models[3], shaders[2], treeComp, glm::vec3(0.13f, 0.55f, 0.13f)));
+
+        glm::vec3 treeColor = (i % 2 == 0) ? glm::vec3(0.14f, 0.52f, 0.15f) : glm::vec3(0.11f, 0.46f, 0.13f);
+        scene3->addObject(new DrawableObject(models[3], shaders[2], treeComp, treeColor));
     }
 
-    float bushX[] = { -2.0f, -1.6f, -1.2f, -0.8f, -0.4f, 0.0f, 0.4f, 0.8f, 1.2f, 1.6f, 2.0f, -0.2f };
-    for (int i = 0; i < 12; i++) {
+    // 4. Кусты перед деревьями[cite: 44]
+    for (int i = 0; i < 9; i++) {
         auto bushComp = std::make_shared<CompositeTransformation>();
-        bushComp->add(std::make_shared<Translation>(bushX[i], -0.6f, 0.2f));
-        bushComp->add(std::make_shared<Scale>(0.35f));
+        float bx = -1.45f + i * 0.35f;
+        bushComp->add(std::make_shared<Translation>(bx, -0.53f, 0.05f));
+        bushComp->add(std::make_shared<Scale>(0.19f));
         scene3->addObject(new DrawableObject(models[4], shaders[2], bushComp, glm::vec3(0.18f, 0.65f, 0.22f)));
     }
 
     addWatermark(scene3);
     scenes.push_back(scene3);
 
-    Scene* scene4 = new Scene("Student Model: ZHA0067");
+    // =========================================================================
+    // СЦЕНА 4: Персональная 3D-модель логина (ZHA0067)
+    // =========================================================================
+    Scene* scene4 = new Scene("4: Model ZHA0067");
     auto loginComp = std::make_shared<CompositeTransformation>();
-    loginComp->add(std::make_shared<Scale>(1.0f));
+    
+    // БЕЗ поворотов: строго фронтальный вид, только масштабирование
+    loginComp->add(std::make_shared<Scale>(0.85f));
+    
     scene4->addObject(new DrawableObject(models[6], shaders[1], loginComp));
     scenes.push_back(scene4);
 
-    Scene* solarScene = new Scene("Solar System (Slunecni soustava)");
-    ShaderProgram* planetShader = shaders[3];
+    // =========================================================================
+    // СЦЕНА 5: Солнечная система с иерархией орбит
+    // =========================================================================
+    Scene* scene5 = new Scene("5: Slunecni soustava");
 
+    // 1. СОЛНЦЕ (Центр мира, собственное медленное вращение)
     auto sunComp = std::make_shared<CompositeTransformation>();
     sunSelfRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto sunScale = std::make_shared<Scale>(0.6f);
     sunComp->add(sunSelfRotation);
-    sunComp->add(sunScale);
-    solarScene->addObject(new DrawableObject(models[7], planetShader, sunComp));
+    sunComp->add(std::make_shared<Scale>(1.6f));
+    scene5->addObject(new DrawableObject(models[7], shaders[0], sunComp));
 
+    // 2. ЗЕМЛЯ (Вращение по орбите вокруг Солнца + смещение + собственное вращение)
     auto earthComp = std::make_shared<CompositeTransformation>();
     earthOrbitRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto earthOrbitTranslate = std::make_shared<Translation>(2.4f, 0.0f, 0.0f);
     earthSelfRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto earthScale = std::make_shared<Scale>(0.28f);
-
     earthComp->add(earthOrbitRotation);
-    earthComp->add(earthOrbitTranslate);
+    earthComp->add(std::make_shared<Translation>(7.0f, 0.0f, 0.0f)); // радиус орбиты Земли
     earthComp->add(earthSelfRotation);
-    earthComp->add(earthScale);
-    solarScene->addObject(new DrawableObject(models[8], planetShader, earthComp));
+    earthComp->add(std::make_shared<Scale>(0.6f));
+    scene5->addObject(new DrawableObject(models[8], shaders[0], earthComp));
 
+    // 3. ЛУНА (Наследует орбиту Земли + собственная орбита вокруг Земли + масштаб)
     auto moonComp = std::make_shared<CompositeTransformation>();
     moonOrbitRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto moonOrbitTranslate = std::make_shared<Translation>(0.6f, 0.0f, 0.0f);
     moonSelfRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto moonScale = std::make_shared<Scale>(0.1f);
-
+    // Переход в систему координат Земли:
     moonComp->add(earthOrbitRotation);
-    moonComp->add(earthOrbitTranslate);
+    moonComp->add(std::make_shared<Translation>(7.0f, 0.0f, 0.0f));
+    // Собственная орбита вокруг центра Земли:
     moonComp->add(moonOrbitRotation);
-    moonComp->add(moonOrbitTranslate);
+    moonComp->add(std::make_shared<Translation>(1.5f, 0.0f, 0.0f)); // расстояние от Земли до Луны
     moonComp->add(moonSelfRotation);
-    moonComp->add(moonScale);
-    solarScene->addObject(new DrawableObject(models[9], planetShader, moonComp));
+    moonComp->add(std::make_shared<Scale>(0.22f));
+    scene5->addObject(new DrawableObject(models[9], shaders[0], moonComp));
 
-    addWatermark(solarScene);
-    scenes.push_back(solarScene);
+    addWatermark(scene5);
+    scenes.push_back(scene5);
 }
 
 void Application::run() {
     glEnable(GL_DEPTH_TEST);
 
-    std::cout << " 1: Trojuhelnik (Skladani transformaci)\n";
-    std::cout << " 2: Koule (Stinovani normal)\n";
-    std::cout << " 3: Les (Krajina se stromy a keri)\n";
+    std::cout << "\n=======================================================\n";
+    std::cout << "Aplikace spustena! Prepinani scen klavesami 1 - 5:\n";
+    std::cout << " 1: Trojuhelnik (RGB interpolace)\n";
+    std::cout << " 2: Koule (Normal shading)\n";
+    std::cout << " 3: Les (Krajina se sluncem vpravo nahore)\n";
     std::cout << " 4: Model studenta (ZHA0067)\n";
     std::cout << " 5: Slunecni soustava (Slunce, Zeme, Mesic)\n";
-    std::cout << "Aktualni scena: 5 (Slunecni soustava)\n";
+    std::cout << "=======================================================\n";
 
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float time = static_cast<float>(glfwGetTime());
-
-        if (sunSelfRotation)    sunSelfRotation->setAngle(time * 0.4f);
-        if (earthOrbitRotation) earthOrbitRotation->setAngle(time * 0.7f);
-        if (earthSelfRotation)  earthSelfRotation->setAngle(time * 2.5f);
-        if (moonOrbitRotation)  moonOrbitRotation->setAngle(time * 3.8f);
+        if (sunSelfRotation)    sunSelfRotation->setAngle(time * 0.35f);
+        if (earthOrbitRotation) earthOrbitRotation->setAngle(time * 0.55f);
+        if (earthSelfRotation)  earthSelfRotation->setAngle(time * 2.2f);
+        if (moonOrbitRotation)  moonOrbitRotation->setAngle(time * 3.2f);
         if (moonSelfRotation)   moonSelfRotation->setAngle(time * 1.5f);
 
-        glm::mat4 view = glm::lookAt(
-            glm::vec3(0.0f, 3.8f, 5.5f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
+        float aspect = (windowHeight > 0) ? (static_cast<float>(windowWidth) / static_cast<float>(windowHeight)) : (4.0f / 3.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 500.0f);
 
-        float aspectRatio = (windowHeight > 0) ? (static_cast<float>(windowWidth) / static_cast<float>(windowHeight)) : (800.0f / 600.0f);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+        glm::mat4 view = glm::mat4(1.0f);
 
+        if (activeSceneIndex == 4) {
+            view = glm::lookAt(
+                glm::vec3(0.0f, 12.0f, 25.0f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+        }
+        else if (activeSceneIndex == 2) {
+            // Сцена 3: Лес (камера отдалена назад на 35 и поднята на 15, чтобы охватить весь ландшафт)
+            view = glm::lookAt(
+                glm::vec3(0.0f, 1.0f, 8.0f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+        }
+        else if (activeSceneIndex == 3) {
+            // Сцена 4: Модель студента ZHA0067
+            view = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 2.5f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+        }
+        else {
+            // Сцены 1 и 2: Треугольник и Сфера
+            view = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 2.5f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+        }
+
+        // 4. Отправка матриц во все шейдерные программы
         for (ShaderProgram* sp : shaders) {
-            sp->use();
+            sp->use(); //[cite: 22]
             sp->setUniform("viewMatrix", view);
             sp->setUniform("projectMatrix", projection);
         }
 
+        // 5. Отрисовка активной сцены
         if (activeSceneIndex < scenes.size() && scenes[activeSceneIndex] != nullptr) {
-            scenes[activeSceneIndex]->render();
+            scenes[activeSceneIndex]->render(); //[cite: 22]
         }
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        glfwSwapBuffers(window); //[cite: 22]
+        glfwPollEvents(); //[cite: 22]
     }
 }
 
@@ -300,25 +372,12 @@ void Application::handleKeyboard(int key, int action) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else if (key == GLFW_KEY_1 && scenes.size() > 0) {
-            activeSceneIndex = 0;
-            std::cout << "Prepnuto na scenu: 1 (" << scenes[0]->getName() << ")" << std::endl;
-        }
-        else if (key == GLFW_KEY_2 && scenes.size() > 1) {
-            activeSceneIndex = 1;
-            std::cout << "Prepnuto na scenu: 2 (" << scenes[1]->getName() << ")" << std::endl;
-        }
-        else if (key == GLFW_KEY_3 && scenes.size() > 2) {
-            activeSceneIndex = 2;
-            std::cout << "Prepnuto na scenu: 3 (" << scenes[2]->getName() << ")" << std::endl;
-        }
-        else if (key == GLFW_KEY_4 && scenes.size() > 3) {
-            activeSceneIndex = 3;
-            std::cout << "Prepnuto na scenu: 4 (" << scenes[3]->getName() << ")" << std::endl;
-        }
-        else if (key == GLFW_KEY_5 && scenes.size() > 4) {
-            activeSceneIndex = 4;
-            std::cout << "Prepnuto na scenu: 5 (" << scenes[4]->getName() << ")" << std::endl;
+        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_5) {
+            size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
+            if (idx < scenes.size()) {
+                activeSceneIndex = idx;
+                std::cout << "Prepnuto na scenu: " << scenes[idx]->getName() << std::endl;
+            }
         }
     }
 }
