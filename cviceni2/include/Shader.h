@@ -8,13 +8,13 @@ private:
     GLuint shaderId;
     GLenum shaderType;
 
-    std::string loadSourceFromFile(const char* filePath);
-    void checkCompilationErrors(GLuint shader, const char* filePath);
-
+    std::string loadFile(const char* filePath);
+    void checkCompileErrors(GLuint shader);
 
 public:
     Shader(GLenum type, const char* filePath);
     ~Shader();
 
-    GLuint getId() const { return shaderId; }
+    GLuint getId() const;
+    GLenum getType() const;
 };

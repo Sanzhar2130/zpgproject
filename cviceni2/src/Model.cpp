@@ -1,14 +1,14 @@
 #include "Model.h"
 
-Model::Model(const float* vertices, GLsizeiptr bufferSize, GLsizei count)
-    : vao(0), vbo(0), vertexCount(count) {
+Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count)
+    : VAO(0), VBO(0), vertexCount(count) {
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferSize, vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, dataSize, vertices, GL_STATIC_DRAW);
 
     GLsizei stride = 6 * sizeof(float);
 
@@ -22,13 +22,20 @@ Model::Model(const float* vertices, GLsizeiptr bufferSize, GLsizei count)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-Model::~Model() {
-    if (vbo != 0) glDeleteBuffers(1, &vbo);
-    if (vao != 0) glDeleteVertexArrays(1, &vao);
-}
-
 void Model::draw() const {
-    glBindVertexArray(vao);
+    glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
     glBindVertexArray(0);
+}
+
+GLuint Model::getVAO() const { return VAO; }
+GLsizei Model::getVertexCount() const { return vertexCount; }
+
+Model::~Model() {
+    if (VBO != 0) {
+        glDeleteBuffers(1, &VBO);
+    }
+    if (VAO != 0) {
+        glDeleteVertexArrays(1, &VAO);
+    }
 }

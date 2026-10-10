@@ -4,14 +4,15 @@
 
 class Model {
 private:
-    GLuint vao;
-    GLuint vbo;
+    GLuint VAO;
+    GLuint VBO;
     GLsizei vertexCount;
 
 public:
-    Model(const float* vertices, GLsizeiptr bufferSize, GLsizei count);
+    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count);
     ~Model();
 
     void draw() const;
-    GLuint getVAO() const { return vao; }
+    GLuint getVAO() const;
+    GLsizei getVertexCount() const;
 };

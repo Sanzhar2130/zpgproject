@@ -4,7 +4,7 @@
 #include <sstream>
 #include <cstdlib>
 
-std::string Shader::loadSourceFromFile(const char* filePath) {
+std::string Shader::loadFile(const char* filePath) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
         std::cerr << "Chyba: Nelze otevrit soubor se shaderem: " << filePath << std::endl;
@@ -15,31 +15,31 @@ std::string Shader::loadSourceFromFile(const char* filePath) {
     return buffer.str();
 }
 
-void Shader::checkCompilationErrors(GLuint shader, const char* filePath) {
+void Shader::checkCompileErrors(GLuint shader) {
     GLint success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        char infoLog[1024];
+        GLchar infoLog[1024];
         glGetShaderInfoLog(shader, sizeof(infoLog), nullptr, infoLog);
-        std::cerr << "Kompilace shaderu selhala (" << filePath << "):\n" << infoLog << std::endl;
+        std::cerr << "Kompilace shaderu selhala ("
+            << (shaderType == GL_VERTEX_SHADER ? "VERTEX" : "FRAGMENT")
+            << "):\n" << infoLog << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 
 Shader::Shader(GLenum type, const char* filePath) : shaderType(type), shaderId(0) {
-    std::string code = loadSourceFromFile(filePath);
-    const char* source = code.c_str();
+    std::string code = loadFile(filePath);
+    const char* src = code.c_str();
 
     shaderId = glCreateShader(type);
-    if (shaderId == 0) {
-        std::cerr << "Nelze vytvorit shader objekt." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    glShaderSource(shaderId, 1, &source, nullptr);
+    glShaderSource(shaderId, 1, &src, nullptr);
     glCompileShader(shaderId);
-    checkCompilationErrors(shaderId, filePath);
+    checkCompileErrors(shaderId);
 }
+
+GLuint Shader::getId() const { return shaderId; }
+GLenum Shader::getType() const { return shaderType; }
 
 Shader::~Shader() {
     if (shaderId != 0) {

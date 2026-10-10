@@ -1,11 +1,10 @@
 #version 330 core
 
 in vec3 fragNormal;
-in vec3 fragWorldPos;
-
-out vec4 outColor;
+out vec4 fragColor;
 
 void main()
 {
-    outColor = vec4(abs(normalize(fragNormal)), 1.0);
+    vec3 norm = normalize(fragNormal);
+    fragColor = vec4(abs(norm), 1.0);
 }

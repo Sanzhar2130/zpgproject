@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -13,7 +14,7 @@
 #include "Scene.h"
 #include "Model.h"
 #include "ShaderProgram.h"
-#include "DrawableObject.h"
+#include "Transformation.h"
 
 class Application {
 private:
@@ -27,18 +28,18 @@ private:
     std::vector<Model*> models;
     std::vector<ShaderProgram*> shaders;
 
-    DrawableObject* sunObject;
-    DrawableObject* earthObject;
-    DrawableObject* moonObject;
-    DrawableObject* marsObject;
+    std::shared_ptr<Rotation> sunSelfRotation;
+    std::shared_ptr<Rotation> earthOrbitRotation;
+    std::shared_ptr<Rotation> earthSelfRotation;
+    std::shared_ptr<Rotation> moonOrbitRotation;
+    std::shared_ptr<Rotation> moonSelfRotation;
 
     static void error_callback(int error, const char* description);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void window_size_callback(GLFWwindow* window, int width, int height);
-	static void cursor_callback(GLFWwindow* window, double x, double y);
-	static void button_callback(GLFWwindow* window, int button, int action, int mode);
 
-    void updateSolarSystem(float currentTime);
+    void addWatermark(Scene* scene);
+
 public:
     Application();
     ~Application();

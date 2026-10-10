@@ -5,7 +5,9 @@
  */
 #pragma once
 
+#include <glad/gl.h>
 #include <glm/glm.hpp>
+#include <memory>
 #include "Model.h"
 #include "ShaderProgram.h"
 #include "Transformation.h"
@@ -14,20 +16,24 @@ class DrawableObject {
 private:
     Model* model;
     ShaderProgram* shaderProgram;
-    Transformation transformation;
+    std::shared_ptr<Transformation> transformation;
     glm::vec3 color;
+    bool isWatermark;
 
 public:
     DrawableObject(Model* m, ShaderProgram* sp,
-        const Transformation& t = Transformation(),
+        std::shared_ptr<Transformation> t = nullptr,
         const glm::vec3& c = glm::vec3(1.0f));
+    ~DrawableObject();
 
-    void draw(const glm::mat4& viewMatrix, const glm::mat4& projectMatrix);
+    void draw() const;
 
-    Transformation& getTransformation();
-    const Transformation& getTransformation() const;
-    void setTransformation(const Transformation& t);
+    void setTransformation(std::shared_ptr<Transformation> t);
+    std::shared_ptr<Transformation> getTransformation() const;
 
     void setColor(const glm::vec3& c);
     glm::vec3 getColor() const;
+
+    void setWatermark(bool watermark);
+    bool getWatermark() const;
 };

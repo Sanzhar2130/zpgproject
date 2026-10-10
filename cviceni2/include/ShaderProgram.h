@@ -16,8 +16,6 @@ private:
 
     void checkLinkErrors(GLuint program);
     GLint getUniformLocation(const std::string& name) const;
-    GLuint getId() const { return programId; }
-
 
 public:
     ShaderProgram();
@@ -28,10 +26,13 @@ public:
     void link();
     void use() const;
 
+    GLuint getId() const;
 
-    void setUniformMatrix4fv(const std::string& name, const glm::mat4& matrix) const;
-    void setUniform3f(const std::string& name, const glm::vec3& value) const;
     void setUniform(const std::string& name, float value) const;
     void setUniform(const std::string& name, int value) const;
-
+    void setUniform(const std::string& name, float x, float y) const;
+    void setUniform(const std::string& name, float x, float y, float z) const;
+    void setUniform(const std::string& name, float x, float y, float z, float w) const;
+    void setUniform(const std::string& name, const glm::vec3& vector) const;
+    void setUniform(const std::string& name, const glm::mat4& matrix) const;
 };

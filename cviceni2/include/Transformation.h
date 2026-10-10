@@ -6,51 +6,76 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <memory>
 
-class TransformComponent {
+
+class Transformation {
 public:
-    virtual ~TransformComponent() = default;
+    virtual ~Transformation() = default;
     virtual glm::mat4 getMatrix() const = 0;
 };
 
-class LeafTransform : public TransformComponent {
+
+class Translation : public Transformation {
 private:
-    glm::mat4 matrix;
+    glm::vec3 translationVector;
 
 public:
-    explicit LeafTransform(const glm::mat4& m = glm::mat4(1.0f));
+    Translation(const glm::vec3& vec);
+    Translation(float x, float y, float z);
+
+    void setPosition(const glm::vec3& vec);
+    void setPosition(float x, float y, float z);
+    glm::vec3 getPosition() const;
+
     glm::mat4 getMatrix() const override;
-    void setMatrix(const glm::mat4& m);
+};
+
+class Rotation : public Transformation {
+private:
+    float angle;
+    glm::vec3 axis;
+
+public:
+    Rotation(float angleInRadians, const glm::vec3& rotationAxis);
+
+    void setAngle(float angleInRadians);
+    void addAngle(float deltaRadians);
+    float getAngle() const;
+    glm::vec3 getAxis() const;
+
+    glm::mat4 getMatrix() const override;
+};
+
+class Scale : public Transformation {
+private:
+    glm::vec3 scaleVector;
+
+public:
+    Scale(const glm::vec3& scale);
+    Scale(float uniformScale);
+    Scale(float sx, float sy, float sz);
+
+    void setScale(const glm::vec3& scale);
+    void setScale(float uniformScale);
+    glm::vec3 getScale() const;
+
+    glm::mat4 getMatrix() const override;
 };
 
 
-class CompositeTransform : public TransformComponent {
+class CompositeTransformation : public Transformation {
 private:
-    std::vector<std::shared_ptr<TransformComponent>> components;
+    std::vector<std::shared_ptr<Transformation>> transformations;
 
 public:
-    CompositeTransform() = default;
-    void add(const std::shared_ptr<TransformComponent>& component);
+    CompositeTransformation() = default;
+
+    void add(std::shared_ptr<Transformation> t);
     void clear();
+    const std::vector<std::shared_ptr<Transformation>>& getChildren() const;
+
     glm::mat4 getMatrix() const override;
-};
-
-
-class Transformation {
-private:
-    glm::mat4 modelMatrix;
-
-public:
-    Transformation();
-    explicit Transformation(const glm::mat4& m);
-
-    void reset();
-    void translate(const glm::vec3& translation);
-    void rotate(float angleRadians, const glm::vec3& axis);
-    void scale(const glm::vec3& scaling);
-
-    void setMatrix(const glm::mat4& m);
-    const glm::mat4& getModelMatrix() const;
 };
