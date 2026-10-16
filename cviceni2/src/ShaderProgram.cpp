@@ -29,7 +29,7 @@ void ShaderProgram::checkLinkErrors(GLuint program) {
     if (!success) {
         GLchar infoLog[1024];
         glGetProgramInfoLog(program, sizeof(infoLog), nullptr, infoLog);
-        std::cerr << "Linkovani shaderoveho programu selhalo:\n" << infoLog << std::endl;
+        std::cerr << "Error: Shader program linking failed:\n" << infoLog << std::endl;
         exit(EXIT_FAILURE);
     }
 }

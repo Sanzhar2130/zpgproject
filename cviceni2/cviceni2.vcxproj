@@ -144,6 +144,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\Application.h" />
+    <ClInclude Include="include\Camera.h" />
+    <ClInclude Include="include\Observer.h" />
     <ClInclude Include="include\DrawableObject.h" />
     <ClInclude Include="include\glad\gl.h" />
     <ClInclude Include="include\Model.h" />
@@ -167,12 +169,9 @@
     <None Include="shaders\abs_normals.frag" />
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
-    <None Include="shaders\bushes.vert" />
     <None Include="shaders\color_uniform.frag" />
     <None Include="shaders\vertex_color.frag" />
     <None Include="shaders\vertex_color.vert" />
-    <None Include="shaders\sphere.frag" />
-    <None Include="shaders\sphere.vert" />
     <None Include="shaders\transform.vert" />
   </ItemGroup>
   <ItemGroup>
@@ -183,6 +182,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\DrawableObject.cpp" />
     <ClCompile Include="src\main.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

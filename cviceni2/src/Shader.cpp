@@ -7,7 +7,7 @@
 std::string Shader::loadFile(const char* filePath) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
-        std::cerr << "Chyba: Nelze otevrit soubor se shaderem: " << filePath << std::endl;
+        std::cerr << "Error: Cannot open shader file: " << filePath << std::endl;
         exit(EXIT_FAILURE);
     }
     std::stringstream buffer;
@@ -21,7 +21,7 @@ void Shader::checkCompileErrors(GLuint shader) {
     if (!success) {
         GLchar infoLog[1024];
         glGetShaderInfoLog(shader, sizeof(infoLog), nullptr, infoLog);
-        std::cerr << "Kompilace shaderu selhala ("
+        std::cerr << "Error: Shader compilation failed ("
             << (shaderType == GL_VERTEX_SHADER ? "VERTEX" : "FRAGMENT")
             << "):\n" << infoLog << std::endl;
         exit(EXIT_FAILURE);

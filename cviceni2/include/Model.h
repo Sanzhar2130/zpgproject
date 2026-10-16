@@ -1,3 +1,8 @@
+/**
+ * @file Model.h
+ * @author Student (login: ZHA0067)
+ * @brief Model class for handling 3D model data and rendering.
+ */
 #pragma once
 
 #include <glad/gl.h>
@@ -9,10 +14,8 @@ private:
     GLsizei vertexCount;
 
 public:
-    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count);
+    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor = false);
     ~Model();
-
-    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor);
 
     void draw() const;
     GLuint getVAO() const;

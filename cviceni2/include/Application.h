@@ -28,6 +28,9 @@ private:
     std::vector<Model*> models;
     std::vector<ShaderProgram*> shaders;
 
+    std::shared_ptr<Rotation> triRotLocal;
+    std::shared_ptr<Rotation> triRotOrbit;
+
     std::shared_ptr<Rotation> sunSelfRotation;
     std::shared_ptr<Rotation> earthOrbitRotation;
     std::shared_ptr<Rotation> earthSelfRotation;

@@ -9,11 +9,12 @@
 #include <glm/glm.hpp>
 #include <string>
 #include "Shader.h"
+#include "Camera.h"
 
 class ShaderProgram {
 private:
     GLuint programId;
-
+    
     void checkLinkErrors(GLuint program);
     GLint getUniformLocation(const std::string& name) const;
 

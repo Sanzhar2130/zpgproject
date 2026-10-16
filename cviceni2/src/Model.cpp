@@ -1,26 +1,9 @@
+/**
+ * @file Model.cpp
+ * @author Student (login: ZHA0067)
+ * @brief Model class for handling 3D model data and rendering.
+ */
 #include "Model.h"
-
-Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count)
-    : VAO(0), VBO(0), vertexCount(count) {
-
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, dataSize, vertices, GL_STATIC_DRAW);
-
-    GLsizei stride = 6 * sizeof(float);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void*)(3 * sizeof(float)));
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
 
 Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor)
     : VAO(0), VBO(0), vertexCount(count) {
@@ -43,6 +26,15 @@ Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool has
 
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (const void*)(6 * sizeof(float)));
+
+    } else {
+        GLsizei stride = 6 * sizeof(float);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void*)0);
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void*)(3 * sizeof(float)));
     }
 
     glBindVertexArray(0);
@@ -55,8 +47,13 @@ void Model::draw() const {
     glBindVertexArray(0);
 }
 
-GLuint Model::getVAO() const { return VAO; }
-GLsizei Model::getVertexCount() const { return vertexCount; }
+GLuint Model::getVAO() const {
+    return VAO;
+}
+
+GLsizei Model::getVertexCount() const {
+    return vertexCount;
+}
 
 Model::~Model() {
     if (VBO != 0) {

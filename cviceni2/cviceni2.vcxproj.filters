@@ -87,21 +87,18 @@
     <ClInclude Include="models\sun.h">
       <Filter>models</Filter>
     </ClInclude>
+    <ClInclude Include="include\Camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Observer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\basic.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\sphere.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\sphere.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\bushes.vert">
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\vertex_color.vert">
@@ -146,6 +143,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\Transformation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
