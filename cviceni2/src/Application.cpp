@@ -406,9 +406,25 @@ void Application::handleKeyboard(int key, int action) {
         }
         else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_6) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
-            if (idx < scenes.size()) {
+            if (camera) {
                 activeSceneIndex = idx;
                 std::cout << "Switched to scene: " << scenes[idx]->getName() << std::endl;
+                if (idx == 5) {
+                    camera->setPosition(glm::vec3(0.0f, 0.0f, 2.35f));
+                    camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
+                }
+                else if (idx == 2) {
+                    camera->setPosition(glm::vec3(0.0f, 1.2f, 6.0f));
+                    camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
+                }
+                else if (idx == 4) {
+                    camera->setPosition(glm::vec3(0.0f, 5.0f, 15.0f));
+                    camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
+                }
+                else {
+                    camera->setPosition(glm::vec3(0.0f, 0.0f, 2.5f));
+                    camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
+                }
             }
         }
         else if (key == GLFW_KEY_P) {
