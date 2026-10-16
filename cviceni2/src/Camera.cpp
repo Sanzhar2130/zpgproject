@@ -17,7 +17,7 @@ Camera::Camera(glm::vec3 startEye, float startAlpha, float startFi, float screen
 }
 
 void Camera::updateVectors() {
-    // Вычисление вектора направления взгляда по формулам из лекции ZPG
+    // Calculation of the view direction vector
     target.x = sin(alpha) * cos(fi);
     target.z = sin(alpha) * sin(fi);
     target.y = cos(alpha);
@@ -27,14 +27,14 @@ void Camera::updateVectors() {
 }
 
 void Camera::updateView() {
-    // Формирование матрицы вида: LookAt(глаз, куда смотрим, где верх)
+    // Formation of the view matrix: LookAt(eye, where we look, where up)
     viewMatrix = glm::lookAt(eye, eye + target, up);
     notify();
 }
 
 void Camera::updateProjection() {
     if (projType == ProjectionType::Perspective) {
-        // zNear строго 0.1f (не 0.0f, чтобы исключить деление на ноль в Z-буфере)
+        // zNear is strictly 0.1f (not 0.0f to eliminate division by zero in the Z-buffer)
         projectionMatrix = glm::perspective(fov, aspect, zNear, zFar);
     }
     else {
@@ -47,7 +47,7 @@ void Camera::updateProjection() {
 void Camera::attach(Observer* observer) {
     if (observer) {
         observers.push_back(observer);
-        // Немедленно передаем текущее состояние новому наблюдателю
+        // Immediately pass the current state to the new observer
         observer->update(viewMatrix, projectionMatrix);
     }
 }
@@ -68,8 +68,7 @@ void Camera::handleMouseMovement(float xOffset, float yOffset, float sensitivity
     fi += xOffset * sensitivity;
     alpha -= yOffset * sensitivity;
 
-    // Защита от Gimbal Lock: ограничиваем зенитный угол alpha
-    // Угол не должен достигать 0 или 180 градусов (в радианах ~0.01f и ~3.13f)
+    // Gimbal Lock Protection: limit alpha zenith angle
     const float eps = 0.01f;
     if (alpha < eps) alpha = eps;
     if (alpha > glm::pi<float>() - eps) alpha = glm::pi<float>() - eps;

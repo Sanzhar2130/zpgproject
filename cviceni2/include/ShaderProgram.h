@@ -5,16 +5,16 @@
  */
 #pragma once
 
+#include <string>
 #include <glad/gl.h>
 #include <glm/glm.hpp>
-#include <string>
 #include "Shader.h"
-#include "Camera.h"
+#include "Observer.h"
 
-class ShaderProgram {
+class ShaderProgram : public Observer {
 private:
     GLuint programId;
-    
+
     void checkLinkErrors(GLuint program);
     GLint getUniformLocation(const std::string& name) const;
 
@@ -26,9 +26,12 @@ public:
     void attachShader(const Shader& shader);
     void link();
     void use() const;
-
     GLuint getId() const;
 
+    // Реализация интерфейса Observer: автоматическое получение матриц от Camera
+    void update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
+
+    // Методы отправки uniform-переменных
     void setUniform(const std::string& name, float value) const;
     void setUniform(const std::string& name, int value) const;
     void setUniform(const std::string& name, float x, float y) const;

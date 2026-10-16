@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 #include <ctime>
 
 #include "../models/sun.h"
@@ -18,6 +19,7 @@
 #include "../models/bushes.h"
 #include "../models/gift.h"
 #include "../models/zha0067.h"
+#include "../models/clock.h"
 
 static const float triangleVertices[] = {
      0.0f,  0.55f, 0.0f,   1.0f, 0.0f, 0.0f,
@@ -42,11 +44,22 @@ void Application::window_size_callback(GLFWwindow* window, int width, int height
     if (app) {
         app->windowWidth = width;
         app->windowHeight = height;
+        float aspect = (height > 0) ? (static_cast<float>(width) / static_cast<float>(height)) : 1.0f;
+        app->camera->setAspect(aspect);
+    }
+}
+
+void Application::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (app) {
+        app->handleMouse(xpos, ypos);
     }
 }
 
 Application::Application()
-    : window(nullptr), windowWidth(1024), windowHeight(768), activeSceneIndex(0) {}
+    : window(nullptr), windowWidth(1024), windowHeight(768), activeSceneIndex(0),
+    camera(nullptr), lastX(512.0), lastY(384.0), firstMouse(true),
+    deltaTime(0.0f), lastFrame(0.0f), clockShader(nullptr) {}
 
 Application::~Application() {
     for (Scene* s : scenes) delete s;
@@ -86,8 +99,11 @@ void Application::initialization() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwSetKeyCallback(window, key_callback);
     glfwSetWindowSizeCallback(window, window_size_callback);
+    glfwSetCursorPosCallback(window, cursor_pos_callback);
 
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
@@ -98,6 +114,9 @@ void Application::initialization() {
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL Version:   " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
+    float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+    camera = new Camera(glm::vec3(0.0f, 2.0f, 6.0f), glm::radians(90.0f), glm::radians(-90.0f), aspect);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -110,14 +129,26 @@ void Application::createShaders() {
 
     Shader vertColor(GL_VERTEX_SHADER, "shaders/vertex_color.vert");
     Shader fragColor(GL_FRAGMENT_SHADER, "shaders/vertex_color.frag");
-    shaders.push_back(new ShaderProgram(vertColor, fragColor));
+    ShaderProgram* spColor = new ShaderProgram(vertColor, fragColor);
+    shaders.push_back(spColor);
 
     Shader vertNormal(GL_VERTEX_SHADER, "shaders/transform.vert");
     Shader fragAbsNormal(GL_FRAGMENT_SHADER, "shaders/abs_normals.frag");
-    shaders.push_back(new ShaderProgram(vertNormal, fragAbsNormal));
+    ShaderProgram* spNormal = new ShaderProgram(vertNormal, fragAbsNormal);
+    shaders.push_back(spNormal);
 
     Shader fragUniformColor(GL_FRAGMENT_SHADER, "shaders/color_uniform.frag");
-    shaders.push_back(new ShaderProgram(vertNormal, fragUniformColor));
+    ShaderProgram* spUniform = new ShaderProgram(vertNormal, fragUniformColor);
+    shaders.push_back(spUniform);
+
+    Shader vertClock(GL_VERTEX_SHADER, "shaders/clock.vert");
+    Shader fragClock(GL_FRAGMENT_SHADER, "shaders/clock.frag");
+    clockShader = new ShaderProgram(vertClock, fragClock);
+    shaders.push_back(clockShader);
+
+    for (ShaderProgram* sp : shaders) {
+        camera->attach(sp);
+    }
 }
 
 
@@ -133,6 +164,8 @@ void Application::createModels() {
     models.push_back(new Model(sun, sizeof(sun), 11520, true));
     models.push_back(new Model(earth, sizeof(earth), 11520, true));
     models.push_back(new Model(moon, sizeof(moon), 11520, true));
+
+    models.push_back(new Model(clockModel, sizeof(clockModel), static_cast<GLsizei>(vertexCount), true));
 }
 
 void Application::addWatermark(Scene* scene) {
@@ -186,8 +219,8 @@ void Application::createScenes() {
 
     auto plainComp = std::make_shared<CompositeTransformation>();
     plainComp->add(std::make_shared<Translation>(0.0f, -0.65f, 0.0f));
-    plainComp->add(std::make_shared<Scale>(7.5f, 1.0f, 7.5f));
-    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.22f, 0.52f, 0.22f)));
+    plainComp->add(std::make_shared<Scale>(15.0f, 1.0f, 15.0f));
+    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.2f, 0.5f, 0.2f)));
 
     auto forestSunComp = std::make_shared<CompositeTransformation>();
     forestSunComp->add(std::make_shared<Translation>(3.8f, 3.2f, -2.5f));
@@ -198,43 +231,41 @@ void Application::createScenes() {
         return minVal + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (maxVal - minVal)));
     };
 
-    const int treeCount = 55;
+    const int treeCount = 85;
     for (int i = 0; i < treeCount; ++i) {
-        float posX = getRandomFloat(-3.4f, 3.4f);
-        float posZ = getRandomFloat(-3.4f, 2.5f);
+        float posX = getRandomFloat(-11.5f, 11.5f);
+        float posZ = getRandomFloat(-11.5f, 11.5f);
         float posY = -0.60f;
-
         float rotAngle = getRandomFloat(0.0f, 360.0f);
-
-        float scaleVal = getRandomFloat(0.22f, 0.42f);
+        float scaleVal = getRandomFloat(0.25f, 0.48f);
 
         auto treeComp = std::make_shared<CompositeTransformation>();
         treeComp->add(std::make_shared<Translation>(posX, posY, posZ));
         treeComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
         treeComp->add(std::make_shared<Scale>(scaleVal));
 
-        float greenTone = getRandomFloat(0.42f, 0.58f);
-        glm::vec3 treeColor(0.12f, greenTone, 0.14f);
+        float greenTone = getRandomFloat(0.40f, 0.60f);
+        glm::vec3 treeColor(0.12f, greenTone, 0.15f);
 
         scene3->addObject(new DrawableObject(models[3], shaders[2], treeComp, treeColor));
     }
 
-    const int bushCount = 35;
+    const int bushCount = 40;
     for (int i = 0; i < bushCount; ++i) {
-        float posX = getRandomFloat(-3.3f, 3.3f);
-        float posZ = getRandomFloat(-3.3f, 3.0f);
+        float posX = getRandomFloat(-11.0f, 11.0f);
+        float posZ = getRandomFloat(-11.0f, 11.0f);
         float posY = -0.56f;
 
         float rotAngle = getRandomFloat(0.0f, 360.0f);
-        float scaleVal = getRandomFloat(0.12f, 0.22f);
+        float scaleVal = getRandomFloat(0.14f, 0.26f);
 
         auto bushComp = std::make_shared<CompositeTransformation>();
         bushComp->add(std::make_shared<Translation>(posX, posY, posZ));
         bushComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
         bushComp->add(std::make_shared<Scale>(scaleVal));
 
-        float greenTone = getRandomFloat(0.55f, 0.70f);
-        glm::vec3 bushColor(0.16f, greenTone, 0.20f);
+        float greenTone = getRandomFloat(0.55f, 0.72f);
+        glm::vec3 bushColor(0.18f, greenTone, 0.22f);
 
         scene3->addObject(new DrawableObject(models[4], shaders[2], bushComp, bushColor));
     }
@@ -244,9 +275,7 @@ void Application::createScenes() {
 
     Scene* scene4 = new Scene("4: Model ZHA0067");
     auto loginComp = std::make_shared<CompositeTransformation>();
-    
     loginComp->add(std::make_shared<Scale>(0.85f));
-    
     scene4->addObject(new DrawableObject(models[6], shaders[1], loginComp));
     scenes.push_back(scene4);
 
@@ -277,9 +306,45 @@ void Application::createScenes() {
     moonComp->add(moonSelfRotation);
     moonComp->add(std::make_shared<Scale>(0.22f));
     scene5->addObject(new DrawableObject(models[9], shaders[0], moonComp));
-
     addWatermark(scene5);
     scenes.push_back(scene5);
+
+    Scene* scene6 = new Scene("6: Clock");
+    auto clockComp = std::make_shared<CompositeTransformation>();
+    clockComp->add(std::make_shared<Scale>(-1.15f, 1.15f, 1.15f));
+    scene6->addObject(new DrawableObject(models[10], clockShader, clockComp));
+
+    addWatermark(scene6);
+    scenes.push_back(scene6);
+}
+
+void Application::processInput() {
+    float cameraSpeed = 5.0f * deltaTime; // Скорость ходьбы с компенсацией deltaTime
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera->moveForward(cameraSpeed);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera->moveBackward(cameraSpeed);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera->moveLeft(cameraSpeed);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera->moveRight(cameraSpeed);
+}
+
+void Application::handleMouse(double xpos, double ypos) {
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = static_cast<float>(xpos - lastX);
+    float yoffset = static_cast<float>(lastY - ypos); 
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera->handleMouseMovement(xoffset, yoffset);
 }
 
 void Application::run() {
@@ -287,9 +352,16 @@ void Application::run() {
 
 
     while (!glfwWindowShouldClose(window)) {
+
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        processInput();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float time = static_cast<float>(glfwGetTime());
+        float time = currentFrame;
         if (triRotLocal) triRotLocal->setAngle(time * 1.5f);
         if (triRotOrbit) triRotOrbit->setAngle(time * 1.5f);
 
@@ -299,41 +371,23 @@ void Application::run() {
         if (moonOrbitRotation)  moonOrbitRotation->setAngle(time * 3.2f);
         if (moonSelfRotation)   moonSelfRotation->setAngle(time * 1.5f);
 
-        float aspect = (windowHeight > 0) ? (static_cast<float>(windowWidth) / static_cast<float>(windowHeight)) : (4.0f / 3.0f);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 500.0f);
+        if (clockShader) {
+            std::time_t rawTime = std::time(nullptr);
+            std::tm timeInfo;
+            localtime_s(&timeInfo, &rawTime);
 
-        glm::mat4 view = glm::mat4(1.0f);
+            float seconds = static_cast<float>(timeInfo.tm_sec);
+            float minutes = static_cast<float>(timeInfo.tm_min) + seconds / 60.0f;
+            float hours = static_cast<float>(timeInfo.tm_hour % 12) + minutes / 60.0f;
 
-        if (activeSceneIndex == 4) {
-            view = glm::lookAt(
-                glm::vec3(0.0f, 12.0f, 25.0f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
-        } else if (activeSceneIndex == 2) {
-            view = glm::lookAt(
-                glm::vec3(0.0f, 3.5f, 9.5f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
-        } else if (activeSceneIndex == 3) {
-            view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 2.5f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
-        } else {
-            view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 2.5f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
-        }
+            float secAngle = (seconds / 60.0f) * glm::two_pi<float>();
+            float minAngle = (minutes / 60.0f) * glm::two_pi<float>();
+            float hourAngle = (hours / 12.0f) * glm::two_pi<float>();
 
-        for (ShaderProgram* sp : shaders) {
-            sp->use();
-            sp->setUniform("viewMatrix", view);
-            sp->setUniform("projectMatrix", projection);
+            clockShader->use();
+            clockShader->setUniform("uSecondAngle", secAngle);
+            clockShader->setUniform("uMinuteAngle", minAngle);
+            clockShader->setUniform("uHourAngle", hourAngle);
         }
 
         if (activeSceneIndex < scenes.size() && scenes[activeSceneIndex] != nullptr) {
@@ -350,12 +404,20 @@ void Application::handleKeyboard(int key, int action) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_5) {
+        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_6) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
             if (idx < scenes.size()) {
                 activeSceneIndex = idx;
                 std::cout << "Switched to scene: " << scenes[idx]->getName() << std::endl;
             }
+        }
+        else if (key == GLFW_KEY_P) {
+            camera->setProjectionType(ProjectionType::Perspective);
+            std::cout << "Change projection: Perspective" << std::endl;
+        }
+        else if (key == GLFW_KEY_O) {
+            camera->setProjectionType(ProjectionType::Orthogonal);
+            std::cout << "Change projection: Orthogonal" << std::endl;
         }
     }
 }

@@ -47,6 +47,14 @@ GLuint ShaderProgram::getId() const {
     return programId;
 }
 
+void ShaderProgram::update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) {
+    // Включаем шейдер перед отправкой униформ-переменных
+    this->use();
+    // Отправляем матрицу вида и матрицу проекции в GPU
+    this->setUniform("viewMatrix", viewMatrix);
+    this->setUniform("projectMatrix", projectionMatrix);
+}
+
 GLint ShaderProgram::getUniformLocation(const std::string& name) const {
     return glGetUniformLocation(programId, name.c_str());
 }

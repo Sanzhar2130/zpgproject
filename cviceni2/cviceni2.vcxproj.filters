@@ -93,6 +93,9 @@
     <ClInclude Include="include\Observer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="models\clock.h">
+      <Filter>models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag">
@@ -114,6 +117,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\vertex_color.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\clock.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\clock.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

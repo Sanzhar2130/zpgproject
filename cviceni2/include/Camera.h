@@ -12,17 +12,17 @@ enum class ProjectionType {
 
 class Camera {
 private:
-    // Позиция и ориентация в пространстве
+    // Position and orientation in space
     glm::vec3 eye;
     glm::vec3 target;
     glm::vec3 up;
 
-    // Сферические углы (из лекции ZPG)
-    // alpha - зенитный угол (от оси Y), fi - азимутальный угол (в плоскости XZ)
+    // Spherical angles (from the ZPG lecture)
+    // alpha - zenith angle (from the Y-axis), fi - azimuthal angle (in the XZ-plane)
     float alpha;
     float fi;
 
-    // Параметры проекции
+    // Projection parameters
     float fov;
     float aspect;
     float zNear;
@@ -32,7 +32,7 @@ private:
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
 
-    // Список наблюдателей (Shaders)
+    // List of observers (Shaders)
     std::vector<Observer*> observers;
 
     void updateVectors();
@@ -45,26 +45,35 @@ public:
         float startFi = glm::radians(-90.0f),
         float screenAspect = 4.0f / 3.0f);
 
-    // Паттерн Observer
+    // Pattern Observer
     void attach(Observer* observer);
     void detach(Observer* observer);
     void notify();
 
-    // Управление ориентацией (мышь)
     void handleMouseMovement(float xOffset, float yOffset, float sensitivity = 0.005f);
 
-    // Перемещение (клавиатура WASD)
     void moveForward(float delta);
     void moveBackward(float delta);
     void moveLeft(float delta);
     void moveRight(float delta);
 
-    // Настройка проекции
+    // Projection setup
     void setAspect(float newAspect);
     void setProjectionType(ProjectionType type);
 
-    // Геттеры матриц
+
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
     glm::vec3 getPosition() const;
+
+    void setPosition(const glm::vec3& newEye) {
+        eye = newEye;
+        updateView();
+    }
+
+    void setOrientation(float newAlpha, float newFi) {
+        alpha = newAlpha;
+        fi = newFi;
+        updateVectors();
+    }
 };
