@@ -48,9 +48,8 @@ GLuint ShaderProgram::getId() const {
 }
 
 void ShaderProgram::update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) {
-    // Включаем шейдер перед отправкой униформ-переменных
     this->use();
-    // Отправляем матрицу вида и матрицу проекции в GPU
+    // Send the view matrix and projection matrix to the GPU
     this->setUniform("viewMatrix", viewMatrix);
     this->setUniform("projectMatrix", projectionMatrix);
 }

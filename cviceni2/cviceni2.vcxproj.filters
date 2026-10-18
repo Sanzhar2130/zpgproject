@@ -96,6 +96,18 @@
     <ClInclude Include="models\clock.h">
       <Filter>models</Filter>
     </ClInclude>
+    <ClInclude Include="include\CompositeTransformation.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Rotation.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Scale.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Translation.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag">
@@ -125,6 +137,12 @@
     <None Include="shaders\clock.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\tree.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\tree.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -151,10 +169,19 @@
     <ClCompile Include="src\DrawableObject.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Transformation.cpp">
+    <ClCompile Include="src\Camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Camera.cpp">
+    <ClCompile Include="src\CompositeTransformation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Rotation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scale.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Translation.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

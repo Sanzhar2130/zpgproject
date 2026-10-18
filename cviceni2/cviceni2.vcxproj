@@ -145,14 +145,18 @@
   <ItemGroup>
     <ClInclude Include="include\Application.h" />
     <ClInclude Include="include\Camera.h" />
+    <ClInclude Include="include\CompositeTransformation.h" />
     <ClInclude Include="include\Observer.h" />
     <ClInclude Include="include\DrawableObject.h" />
     <ClInclude Include="include\glad\gl.h" />
     <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\Rotation.h" />
+    <ClInclude Include="include\Scale.h" />
     <ClInclude Include="include\Scene.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\ShaderProgram.h" />
     <ClInclude Include="include\Transformation.h" />
+    <ClInclude Include="include\Translation.h" />
     <ClInclude Include="models\bushes.h" />
     <ClInclude Include="models\clock.h" />
     <ClInclude Include="models\earth.h" />
@@ -173,6 +177,8 @@
     <None Include="shaders\clock.frag" />
     <None Include="shaders\clock.vert" />
     <None Include="shaders\color_uniform.frag" />
+    <None Include="shaders\tree.frag" />
+    <None Include="shaders\tree.vert" />
     <None Include="shaders\vertex_color.frag" />
     <None Include="shaders\vertex_color.vert" />
     <None Include="shaders\transform.vert" />
@@ -186,6 +192,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\CompositeTransformation.cpp" />
     <ClCompile Include="src\DrawableObject.cpp" />
     <ClCompile Include="src\main.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -199,6 +206,8 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\Rotation.cpp" />
+    <ClCompile Include="src\Scale.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Shader.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
@@ -212,7 +221,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="src\Transformation.cpp" />
+    <ClCompile Include="src\Translation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

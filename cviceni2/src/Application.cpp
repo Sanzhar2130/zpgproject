@@ -59,7 +59,49 @@ void Application::cursor_pos_callback(GLFWwindow* window, double xpos, double yp
 Application::Application()
     : window(nullptr), windowWidth(1024), windowHeight(768), activeSceneIndex(0),
     camera(nullptr), lastX(512.0), lastY(384.0), firstMouse(true),
-    deltaTime(0.0f), lastFrame(0.0f), clockShader(nullptr) {}
+    isMousePressed(false), deltaTime(0.0f), lastFrame(0.0f),
+    clockShader(nullptr), treeShader(nullptr) {}
+
+
+void Application::mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (app) {
+        app->handleMouseButton(button, action, mods);
+    }
+}
+
+void Application::handleMouseButton(int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_RIGHT || button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            isMousePressed = true;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            lastX = xpos;
+            lastY = ypos;
+        }
+        else if (action == GLFW_RELEASE) {
+            isMousePressed = false;
+        }
+    }
+}
+
+void Application::handleMouse(double xpos, double ypos) {
+    if (!isMousePressed) {
+        lastX = xpos;
+        lastY = ypos;
+        return;
+    }
+
+    float xoffset = static_cast<float>(xpos - lastX);
+    float yoffset = static_cast<float>(lastY - ypos);
+
+    lastX = xpos;
+    lastY = ypos;
+
+    if (camera) {
+        camera->handleMouseMovement(xoffset, yoffset);
+    }
+}
 
 Application::~Application() {
     for (Scene* s : scenes) delete s;
@@ -99,11 +141,12 @@ void Application::initialization() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     glfwSetKeyCallback(window, key_callback);
     glfwSetWindowSizeCallback(window, window_size_callback);
     glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
@@ -111,7 +154,7 @@ void Application::initialization() {
     }
     
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
+    
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL Version:   " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
@@ -145,6 +188,11 @@ void Application::createShaders() {
     Shader fragClock(GL_FRAGMENT_SHADER, "shaders/clock.frag");
     clockShader = new ShaderProgram(vertClock, fragClock);
     shaders.push_back(clockShader);
+
+    Shader vertTree(GL_VERTEX_SHADER, "shaders/tree.vert");
+    Shader fragTree(GL_FRAGMENT_SHADER, "shaders/tree.frag");
+    treeShader = new ShaderProgram(vertTree, fragTree);
+    shaders.push_back(treeShader);
 
     for (ShaderProgram* sp : shaders) {
         camera->attach(sp);
@@ -216,16 +264,15 @@ void Application::createScenes() {
     scenes.push_back(scene2);
 
     Scene* scene3 = new Scene("3: Forest");
-
     auto plainComp = std::make_shared<CompositeTransformation>();
     plainComp->add(std::make_shared<Translation>(0.0f, -0.65f, 0.0f));
     plainComp->add(std::make_shared<Scale>(15.0f, 1.0f, 15.0f));
-    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.2f, 0.5f, 0.2f)));
+    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.18f, 0.38f, 0.16f)));
 
     auto forestSunComp = std::make_shared<CompositeTransformation>();
-    forestSunComp->add(std::make_shared<Translation>(3.8f, 3.2f, -2.5f));
-    forestSunComp->add(std::make_shared<Scale>(0.75f));
-    scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.15f)));
+    forestSunComp->add(std::make_shared<Translation>(12.0f, 16.0f, -12.0f));
+    forestSunComp->add(std::make_shared<Scale>(1.8f));
+    scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.25f)));
 
     auto getRandomFloat = [](float minVal, float maxVal) -> float {
         return minVal + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (maxVal - minVal)));
@@ -233,42 +280,61 @@ void Application::createScenes() {
 
     const int treeCount = 85;
     for (int i = 0; i < treeCount; ++i) {
-        float posX = getRandomFloat(-11.5f, 11.5f);
-        float posZ = getRandomFloat(-11.5f, 11.5f);
-        float posY = -0.60f;
+        float posX = getRandomFloat(-13.5f, 13.5f);
+        float posZ = getRandomFloat(-13.5f, 13.5f);
+
+        if (std::abs(posX) < 1.5f && std::abs(posZ) < 1.5f) {
+            posX += (posX >= 0.0f ? 2.5f : -2.5f);
+        }
+
+        float posY = -0.65f;
         float rotAngle = getRandomFloat(0.0f, 360.0f);
-        float scaleVal = getRandomFloat(0.25f, 0.48f);
+        float scaleVal = getRandomFloat(0.24f, 0.52f);
 
         auto treeComp = std::make_shared<CompositeTransformation>();
         treeComp->add(std::make_shared<Translation>(posX, posY, posZ));
         treeComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
         treeComp->add(std::make_shared<Scale>(scaleVal));
 
-        float greenTone = getRandomFloat(0.40f, 0.60f);
-        glm::vec3 treeColor(0.12f, greenTone, 0.15f);
+        float greenShade = getRandomFloat(0.42f, 0.68f);
+        float redShade = getRandomFloat(0.08f, 0.22f);
+        float blueShade = getRandomFloat(0.10f, 0.20f);
+        glm::vec3 treeFoliageColor(redShade, greenShade, blueShade);
 
-        scene3->addObject(new DrawableObject(models[3], shaders[2], treeComp, treeColor));
+        scene3->addObject(new DrawableObject(models[3], treeShader, treeComp, treeFoliageColor));
     }
 
     const int bushCount = 40;
     for (int i = 0; i < bushCount; ++i) {
-        float posX = getRandomFloat(-11.0f, 11.0f);
-        float posZ = getRandomFloat(-11.0f, 11.0f);
-        float posY = -0.56f;
-
+        float posX = getRandomFloat(-13.0f, 13.0f);
+        float posZ = getRandomFloat(-13.0f, 13.0f);
+        float posY = -0.58f;
         float rotAngle = getRandomFloat(0.0f, 360.0f);
-        float scaleVal = getRandomFloat(0.14f, 0.26f);
+        float scaleVal = getRandomFloat(0.12f, 0.26f);
 
         auto bushComp = std::make_shared<CompositeTransformation>();
         bushComp->add(std::make_shared<Translation>(posX, posY, posZ));
         bushComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
         bushComp->add(std::make_shared<Scale>(scaleVal));
 
-        float greenTone = getRandomFloat(0.55f, 0.72f);
-        glm::vec3 bushColor(0.18f, greenTone, 0.22f);
+        float greenBush = getRandomFloat(0.55f, 0.75f);
+        glm::vec3 bushColor(0.15f, greenBush, 0.18f);
 
         scene3->addObject(new DrawableObject(models[4], shaders[2], bushComp, bushColor));
     }
+
+    auto forestClock1 = std::make_shared<CompositeTransformation>();
+    forestClock1->add(std::make_shared<Translation>(-3.2f, 1.5f, 1.0f));
+    forestClock1->add(std::make_shared<Rotation>(glm::radians(25.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+    forestClock1->add(std::make_shared<Scale>(1.1f, 1.1f, -1.1f));
+    scene3->addObject(new DrawableObject(models[10], clockShader, forestClock1));
+
+
+    auto forestClock2 = std::make_shared<CompositeTransformation>();
+    forestClock2->add(std::make_shared<Translation>(3.5f, 2.3f, -2.5f));
+    forestClock2->add(std::make_shared<Rotation>(glm::radians(-40.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+    forestClock2->add(std::make_shared<Scale>(1.6f, 1.6f, -1.6f));
+    scene3->addObject(new DrawableObject(models[10], clockShader, forestClock2));
 
     addWatermark(scene3);
     scenes.push_back(scene3);
@@ -311,15 +377,15 @@ void Application::createScenes() {
 
     Scene* scene6 = new Scene("6: Clock");
     auto clockComp = std::make_shared<CompositeTransformation>();
-    clockComp->add(std::make_shared<Scale>(-1.15f, 1.15f, 1.15f));
+    clockComp->add(std::make_shared<Scale>(1.15f, 1.15f, -1.15f));
     scene6->addObject(new DrawableObject(models[10], clockShader, clockComp));
-
+    
     addWatermark(scene6);
     scenes.push_back(scene6);
 }
 
 void Application::processInput() {
-    float cameraSpeed = 5.0f * deltaTime; // Скорость ходьбы с компенсацией deltaTime
+    float cameraSpeed = 5.0f * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera->moveForward(cameraSpeed);
@@ -331,21 +397,6 @@ void Application::processInput() {
         camera->moveRight(cameraSpeed);
 }
 
-void Application::handleMouse(double xpos, double ypos) {
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = static_cast<float>(xpos - lastX);
-    float yoffset = static_cast<float>(lastY - ypos); 
-
-    lastX = xpos;
-    lastY = ypos;
-
-    camera->handleMouseMovement(xoffset, yoffset);
-}
 
 void Application::run() {
     glEnable(GL_DEPTH_TEST);
@@ -380,9 +431,9 @@ void Application::run() {
             float minutes = static_cast<float>(timeInfo.tm_min) + seconds / 60.0f;
             float hours = static_cast<float>(timeInfo.tm_hour % 12) + minutes / 60.0f;
 
-            float secAngle = (seconds / 60.0f) * glm::two_pi<float>();
-            float minAngle = (minutes / 60.0f) * glm::two_pi<float>();
-            float hourAngle = (hours / 12.0f) * glm::two_pi<float>();
+            float secAngle = -(seconds / 60.0f) * glm::two_pi<float>();
+            float minAngle = -(minutes / 60.0f) * glm::two_pi<float>();
+            float hourAngle = -(hours / 12.0f) * glm::two_pi<float>();
 
             clockShader->use();
             clockShader->setUniform("uSecondAngle", secAngle);
@@ -414,7 +465,7 @@ void Application::handleKeyboard(int key, int action) {
                     camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
                 }
                 else if (idx == 2) {
-                    camera->setPosition(glm::vec3(0.0f, 1.2f, 6.0f));
+                    camera->setPosition(glm::vec3(0.0f, 1.5f, 5.0f));
                     camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
                 }
                 else if (idx == 4) {
