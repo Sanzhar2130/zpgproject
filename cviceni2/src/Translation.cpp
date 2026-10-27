@@ -1,5 +1,6 @@
 /**
  * @file Translation.cpp
+ * @author Student (login: ZHA0067)
  * @brief Implementation of Translation transformation.
  */
 #include "Translation.h"

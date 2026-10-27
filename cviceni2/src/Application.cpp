@@ -20,6 +20,7 @@
 #include "../models/gift.h"
 #include "../models/zha0067.h"
 #include "../models/clock.h"
+#include "../models/rocket.h"
 
 static const float triangleVertices[] = {
      0.0f,  0.55f, 0.0f,   1.0f, 0.0f, 0.0f,
@@ -194,6 +195,32 @@ void Application::createShaders() {
     treeShader = new ShaderProgram(vertTree, fragTree);
     shaders.push_back(treeShader);
 
+	Shader vertAmbient(GL_VERTEX_SHADER, "shaders/ambient.vert");
+	Shader fragAmbient(GL_FRAGMENT_SHADER, "shaders/ambient.frag");
+	ambientShader = new ShaderProgram(vertAmbient, fragAmbient);
+	shaders.push_back(ambientShader);
+
+    Shader vertLambert(GL_VERTEX_SHADER, "shaders/lambert.vert");
+    Shader fragLambert(GL_FRAGMENT_SHADER, "shaders/lambert.frag");
+    ShaderProgram* spLambert = new ShaderProgram(vertLambert, fragLambert);
+    shaders.push_back(spLambert);
+
+    Shader vertPhong(GL_VERTEX_SHADER, "shaders/phong.vert");
+    Shader fragPhong(GL_FRAGMENT_SHADER, "shaders/phong.frag");
+    phongShader = new ShaderProgram(vertPhong, fragPhong);
+    shaders.push_back(phongShader);
+
+    Shader vertBlinn(GL_VERTEX_SHADER, "shaders/blinn.vert");
+    Shader fragBlinn(GL_FRAGMENT_SHADER, "shaders/blinn.frag");
+    blinnShader = new ShaderProgram(vertBlinn, fragBlinn);
+    shaders.push_back(blinnShader);
+
+    Shader vertBlinnColor(GL_VERTEX_SHADER, "shaders/blinn_color.vert");
+    Shader fragBlinnColor(GL_FRAGMENT_SHADER, "shaders/blinn_color.frag");
+    blinnColorShader = new ShaderProgram(vertBlinnColor, fragBlinnColor);
+    shaders.push_back(blinnColorShader);
+
+
     for (ShaderProgram* sp : shaders) {
         camera->attach(sp);
     }
@@ -214,6 +241,8 @@ void Application::createModels() {
     models.push_back(new Model(moon, sizeof(moon), 11520, true));
 
     models.push_back(new Model(clockModel, sizeof(clockModel), static_cast<GLsizei>(vertexCount), true));
+
+    models.push_back(new Model(rocketModel, sizeof(rocketModel), static_cast<GLsizei>(vertexRocketCount), true));
 }
 
 void Application::addWatermark(Scene* scene) {
@@ -224,12 +253,16 @@ void Application::addWatermark(Scene* scene) {
         wmComp->add(std::make_shared<Rotation>(glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
         wmComp->add(std::make_shared<Translation>(11.5f, -7.5f, 3.5f));
         wmComp->add(std::make_shared<Scale>(1.55f, 1.55f, 0.001f));
-    } else if (name.find("Forest") != std::string::npos || name.find("Woodland") != std::string::npos) {
+    }
+    else if (name.find("Forest") != std::string::npos || name.find("Woodland") != std::string::npos) {
         wmComp->add(std::make_shared<Rotation>(glm::radians(-18.5f), glm::vec3(1.0f, 0.0f, 0.0f)));
         wmComp->add(std::make_shared<Translation>(-4.0f, 3.5f, 0.0f));
         wmComp->add(std::make_shared<Scale>(0.6f, 0.6f, 0.001f));
+    } else if (name.find("Lighting") != std::string::npos || name.find("Models") != std::string::npos) {
+        wmComp->add(std::make_shared<Translation>(2.0f, -1.5f, 0.0f));
+        wmComp->add(std::make_shared<Scale>(0.6f, 0.6f, 0.001f));
     } else {
-        wmComp->add(std::make_shared<Translation>(1.05f, -0.75f, 0.0f));
+        wmComp->add(std::make_shared<Translation>(1.5f, -0.75f, 0.0f));
         wmComp->add(std::make_shared<Scale>(0.18f, 0.18f, 0.001f));
     }
 
@@ -360,7 +393,7 @@ void Application::createScenes() {
     earthComp->add(std::make_shared<Translation>(7.0f, 0.0f, 0.0f));
     earthComp->add(earthSelfRotation);
     earthComp->add(std::make_shared<Scale>(0.6f));
-    scene5->addObject(new DrawableObject(models[8], shaders[0], earthComp));
+    scene5->addObject(new DrawableObject(models[8], blinnColorShader, earthComp));
 
     auto moonComp = std::make_shared<CompositeTransformation>();
     moonOrbitRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -371,10 +404,23 @@ void Application::createScenes() {
     moonComp->add(std::make_shared<Translation>(1.5f, 0.0f, 0.0f));
     moonComp->add(moonSelfRotation);
     moonComp->add(std::make_shared<Scale>(0.22f));
-    scene5->addObject(new DrawableObject(models[9], shaders[0], moonComp));
+    scene5->addObject(new DrawableObject(models[9], blinnColorShader, moonComp));
+
+    auto rocketComp = std::make_shared<CompositeTransformation>();
+    rocketOrbitRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    rocketSelfRotation = std::make_shared<Rotation>(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+
+    rocketComp->add(earthOrbitRotation);
+    rocketComp->add(std::make_shared<Translation>(7.0f, 0.0f, 0.0f));
+    rocketComp->add(rocketOrbitRotation);
+    rocketComp->add(std::make_shared<Translation>(2.2f, 0.4f, 0.0f));
+    rocketComp->add(rocketSelfRotation);
+    rocketComp->add(std::make_shared<Scale>(0.12f));
+    scene5->addObject(new DrawableObject(models[11], blinnColorShader, rocketComp));
+
     addWatermark(scene5);
     scenes.push_back(scene5);
-
+    
     Scene* scene6 = new Scene("6: Clock");
     auto clockComp = std::make_shared<CompositeTransformation>();
     clockComp->add(std::make_shared<Scale>(1.15f, 1.15f, -1.15f));
@@ -382,6 +428,31 @@ void Application::createScenes() {
     
     addWatermark(scene6);
     scenes.push_back(scene6);
+
+    Scene* scene7 = new Scene("7: Lighting Models");
+
+    auto topComp = std::make_shared<CompositeTransformation>();
+    topComp->add(std::make_shared<Translation>(0.0f, 2.0f, 0.0f));
+    topComp->add(std::make_shared<Scale>(0.65f));
+    scene7->addObject(new DrawableObject(models[1], ambientShader, topComp));
+
+    auto bottomComp = std::make_shared<CompositeTransformation>();
+    bottomComp->add(std::make_shared<Translation>(0.0f, -2.0f, 0.0f));
+    bottomComp->add(std::make_shared<Scale>(0.65f));
+    scene7->addObject(new DrawableObject(models[1], shaders[6], bottomComp)); 
+
+    auto leftComp = std::make_shared<CompositeTransformation>();
+    leftComp->add(std::make_shared<Translation>(-2.0f, 0.0f, 0.0f));
+    leftComp->add(std::make_shared<Scale>(0.65f));
+    scene7->addObject(new DrawableObject(models[1], phongShader, leftComp));
+
+    auto rightComp = std::make_shared<CompositeTransformation>();
+    rightComp->add(std::make_shared<Translation>(2.0f, 0.0f, 0.0f));
+    rightComp->add(std::make_shared<Scale>(0.65f));
+    scene7->addObject(new DrawableObject(models[1], blinnShader, rightComp));
+
+	addWatermark(scene7);
+    scenes.push_back(scene7);
 }
 
 void Application::processInput() {
@@ -422,6 +493,9 @@ void Application::run() {
         if (moonOrbitRotation)  moonOrbitRotation->setAngle(time * 3.2f);
         if (moonSelfRotation)   moonSelfRotation->setAngle(time * 1.5f);
 
+        if (rocketOrbitRotation) rocketOrbitRotation->setAngle(time * 2.8f);
+        if (rocketSelfRotation)  rocketSelfRotation->setAngle(time * 1.8f);
+
         if (clockShader) {
             std::time_t rawTime = std::time(nullptr);
             std::tm timeInfo;
@@ -455,7 +529,7 @@ void Application::handleKeyboard(int key, int action) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_6) {
+        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_7) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
             if (camera) {
                 activeSceneIndex = idx;
@@ -475,7 +549,7 @@ void Application::handleKeyboard(int key, int action) {
                 else {
                     camera->setPosition(glm::vec3(0.0f, 0.0f, 2.5f));
                     camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
-                }
+                } 
             }
         }
         else if (key == GLFW_KEY_P) {

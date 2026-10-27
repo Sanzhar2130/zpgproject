@@ -163,6 +163,7 @@
     <ClInclude Include="models\gift.h" />
     <ClInclude Include="models\moon.h" />
     <ClInclude Include="models\plain.h" />
+    <ClInclude Include="models\rocket.h" />
     <ClInclude Include="models\sphere.h" />
     <ClInclude Include="models\sun.h" />
     <ClInclude Include="models\suzi_flat.h" />
@@ -172,11 +173,21 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\abs_normals.frag" />
+    <None Include="shaders\ambient.frag" />
+    <None Include="shaders\ambient.vert" />
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\blinn.frag" />
+    <None Include="shaders\blinn.vert" />
+    <None Include="shaders\blinn_color.frag" />
+    <None Include="shaders\blinn_color.vert" />
     <None Include="shaders\clock.frag" />
     <None Include="shaders\clock.vert" />
     <None Include="shaders\color_uniform.frag" />
+    <None Include="shaders\lambert.frag" />
+    <None Include="shaders\lambert.vert" />
+    <None Include="shaders\phong.frag" />
+    <None Include="shaders\phong.vert" />
     <None Include="shaders\tree.frag" />
     <None Include="shaders\tree.vert" />
     <None Include="shaders\vertex_color.frag" />

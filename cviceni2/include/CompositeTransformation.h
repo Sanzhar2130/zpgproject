@@ -1,5 +1,6 @@
 /**
  * @file CompositeTransformation.h
+ * @author Student (login: ZHA0067)
  * @brief Composite node container combining multiple Transformation instances.
  */
 #pragma once

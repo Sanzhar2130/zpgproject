@@ -28,10 +28,9 @@ public:
     void use() const;
     GLuint getId() const;
 
-    // Реализация интерфейса Observer: автоматическое получение матриц от Camera
+    // Interface implementation Observer: automatic receipt of matrices from Camera
     void update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
 
-    // Методы отправки uniform-переменных
     void setUniform(const std::string& name, float value) const;
     void setUniform(const std::string& name, int value) const;
     void setUniform(const std::string& name, float x, float y) const;

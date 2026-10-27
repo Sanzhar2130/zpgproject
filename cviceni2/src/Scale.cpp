@@ -1,5 +1,6 @@
 /**
  * @file Scale.cpp
+ * @author Student (login: ZHA0067)
  * @brief Implementation of Scale transformation.
  */
 #include "Scale.h"

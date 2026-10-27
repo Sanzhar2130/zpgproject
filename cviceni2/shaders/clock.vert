@@ -25,15 +25,12 @@ void main()
 {
     vec3 animatedPos = inPosition;
 
-    // 1. Секундная стрелка (в модели чистый красный цвет: R > 0.8, G < 0.2, B < 0.2)
     if (inColor.r > 0.8 && inColor.g < 0.2 && inColor.b < 0.2) {
         animatedPos.xy = rotate2D(animatedPos.xy, uSecondAngle);
     }
-    // 2. Минутная стрелка (в модели чистый зелёный цвет: G > 0.8, R < 0.2, B < 0.2)
     else if (inColor.g > 0.8 && inColor.r < 0.2 && inColor.b < 0.2) {
         animatedPos.xy = rotate2D(animatedPos.xy, uMinuteAngle);
     }
-    // 3. Часовая стрелка (в модели чистый синий цвет: B > 0.8, R < 0.2, G < 0.2)
     else if (inColor.b > 0.8 && inColor.r < 0.2 && inColor.g < 0.2) {
         animatedPos.xy = rotate2D(animatedPos.xy, uHourAngle);
     }

@@ -1,5 +1,6 @@
 /**
  * @file Rotation.cpp
+ * @author Student (login: ZHA0067)
  * @brief Implementation of Rotation transformation.
  */
 #include "Rotation.h"

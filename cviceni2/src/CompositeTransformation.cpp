@@ -1,5 +1,6 @@
 /**
  * @file CompositeTransformation.cpp
+ * @author Student (login: ZHA0067)
  * @brief Implementation of CompositeTransformation accumulating matrix multiplication.
  */
 #include "CompositeTransformation.h"

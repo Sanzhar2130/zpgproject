@@ -1,3 +1,8 @@
+/**
+ * @file Observer.h
+ * @author Student (login: ZHA0067)
+ * @brief Base class for observer pattern implementation.
+ */
 #pragma once
 #include <glm/glm.hpp>
 

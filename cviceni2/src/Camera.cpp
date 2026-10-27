@@ -1,3 +1,8 @@
+/**
+ * @file Camera.cpp
+ * @author Student (login: ZHA0067)
+ * @brief Implementation of Camera functionality.
+ */
 #include "Camera.h"
 #include <algorithm>
 

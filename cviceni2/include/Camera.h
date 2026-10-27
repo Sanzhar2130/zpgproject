@@ -1,3 +1,8 @@
+/**
+ * @file Camera.h
+ * @author Student (login: ZHA0067)
+ * @brief Implementation of Camera functionality.
+ */
 #pragma once
 
 #include <vector>

@@ -34,6 +34,10 @@ private:
 
     ShaderProgram* clockShader;
     ShaderProgram* treeShader;
+    ShaderProgram* phongShader;
+	ShaderProgram* blinnShader;
+	ShaderProgram* ambientShader;
+	ShaderProgram* blinnColorShader;
 
     Camera* camera;
 
@@ -53,6 +57,9 @@ private:
     std::shared_ptr<Rotation> earthSelfRotation;
     std::shared_ptr<Rotation> moonOrbitRotation;
     std::shared_ptr<Rotation> moonSelfRotation;
+
+    std::shared_ptr<Rotation> rocketOrbitRotation;
+    std::shared_ptr<Rotation> rocketSelfRotation;
 
     static void error_callback(int error, const char* description);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);

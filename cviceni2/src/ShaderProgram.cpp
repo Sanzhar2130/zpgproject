@@ -49,8 +49,8 @@ GLuint ShaderProgram::getId() const {
 
 void ShaderProgram::update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) {
     this->use();
-    // Send the view matrix and projection matrix to the GPU
     this->setUniform("viewMatrix", viewMatrix);
+    this->setUniform("projectionMatrix", projectionMatrix);
     this->setUniform("projectMatrix", projectionMatrix);
 }
 

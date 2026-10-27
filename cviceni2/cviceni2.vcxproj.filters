@@ -108,6 +108,9 @@
     <ClInclude Include="include\Translation.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="models\rocket.h">
+      <Filter>models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag">
@@ -141,6 +144,36 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\tree.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\lambert.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\lambert.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\phong.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\phong.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\ambient.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\blinn.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\ambient.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\blinn.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\blinn_color.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\blinn_color.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

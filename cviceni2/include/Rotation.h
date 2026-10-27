@@ -1,5 +1,6 @@
 /**
  * @file Rotation.h
+ * @author Student (login: ZHA0067)
  * @brief Leaf transformation representing rotation around an arbitrary axis.
  */
 #pragma once
