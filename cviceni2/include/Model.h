@@ -14,7 +14,7 @@ private:
     GLsizei vertexCount;
 
 public:
-    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor = false);
+    Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor = false, bool hasTexture = false);
     ~Model();
 
     void draw() const;

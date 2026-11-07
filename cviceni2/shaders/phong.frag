@@ -3,28 +3,33 @@
 in vec3 worldPosition;
 in vec3 worldNormal;
 
+uniform vec3 lightPosition; 
+uniform vec3 cameraPosition;
+
 uniform mat4 viewMatrix;
 
-out vec4 out_Color;
+out vec4 fragColor;
 
 void main(void)
 {
-    vec3 lightPosition = vec3(0.0, 0.0, 0.0);
-
-    vec3 lightVector = normalize(lightPosition - worldPosition);
-    vec3 normal = normalize(worldNormal);
-
-    vec3 cameraPosition = inverse(viewMatrix)[3].xyz;
-    vec3 viewDir = normalize(cameraPosition - worldPosition);
+    vec3 N = normalize(worldNormal);
+    vec3 L = normalize(lightPosition - worldPosition);
+    vec3 V = normalize(cameraPosition - worldPosition);
+    vec3 R = reflect(-L, N);
 
     vec4 ambient = vec4(0.1, 0.1, 0.1, 1.0);
 
-    float dotProduct = max(dot(lightVector, normal), 0.0);
-    vec4 diffuse = dotProduct * vec4(0.385, 0.647, 0.812, 1.0);
+    float diff = max(dot(N, L), 0.0);
+    vec4 objectColor = vec4(0.385, 0.647, 0.812, 1.0);
+    vec4 diffuse = diff * objectColor;
 
-    vec3 reflectDir = reflect(-lightVector, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    float shininess = 32.0;
+    float spec = pow(max(dot(R, V), 0.0), shininess);
     vec4 specular = spec * vec4(1.0, 1.0, 1.0, 1.0);
 
-    out_Color = ambient + diffuse + specular;
+    if (diff <= 0.0) {
+        specular = vec4(0.0);
+    }
+
+    fragColor = ambient + diffuse + specular;
 }

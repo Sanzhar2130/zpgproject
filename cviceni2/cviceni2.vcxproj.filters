@@ -28,6 +28,9 @@
     <Filter Include="src">
       <UniqueIdentifier>{6111a159-6a9b-4eaa-8f43-884ae2cc685f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="textures">
+      <UniqueIdentifier>{39698e09-bf10-4cfe-a4db-5f0066a435b4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="models\bushes.h">
@@ -111,14 +114,11 @@
     <ClInclude Include="models\rocket.h">
       <Filter>models</Filter>
     </ClInclude>
+    <ClInclude Include="models\plain2.h">
+      <Filter>models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\basic.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\basic.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\vertex_color.vert">
       <Filter>shaders</Filter>
     </None>
@@ -176,6 +176,24 @@
     <None Include="shaders\blinn_color.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\night_forest.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\night_forest.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\basic.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\basic.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\texture.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\texture.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -217,5 +235,10 @@
     <ClCompile Include="src\Translation.cpp">
       <Filter>src</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\wooden_fence.png">
+      <Filter>textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

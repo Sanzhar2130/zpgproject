@@ -15,7 +15,8 @@ void main(void)
     vec4 wp = modelMatrix * vec4(vp, 1.0);
     worldPosition = wp.xyz / wp.w;
 
-    worldNormal = mat3(transpose(inverse(modelMatrix))) * vn;
+    mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
+    worldNormal = normalMatrix * vn;
 
     gl_Position = projectionMatrix * viewMatrix * wp;
 }

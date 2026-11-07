@@ -38,6 +38,11 @@ private:
 	ShaderProgram* blinnShader;
 	ShaderProgram* ambientShader;
 	ShaderProgram* blinnColorShader;
+	ShaderProgram* vertPhongBad;
+    ShaderProgram* fragPhongBad;
+	ShaderProgram* nightShader;
+	ShaderProgram* textureShader;
+
 
     Camera* camera;
 

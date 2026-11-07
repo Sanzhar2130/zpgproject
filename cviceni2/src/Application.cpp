@@ -21,6 +21,8 @@
 #include "../models/zha0067.h"
 #include "../models/clock.h"
 #include "../models/rocket.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 static const float triangleVertices[] = {
      0.0f,  0.55f, 0.0f,   1.0f, 0.0f, 0.0f,
@@ -162,6 +164,10 @@ void Application::initialization() {
     float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
     camera = new Camera(glm::vec3(0.0f, 2.0f, 6.0f), glm::radians(90.0f), glm::radians(-90.0f), aspect);
 
+    int maxUnits = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxUnits);
+    std::cout << "Texture units available in Fragment Shader: " << maxUnits << std::endl;
+
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -208,7 +214,10 @@ void Application::createShaders() {
     Shader vertPhong(GL_VERTEX_SHADER, "shaders/phong.vert");
     Shader fragPhong(GL_FRAGMENT_SHADER, "shaders/phong.frag");
     phongShader = new ShaderProgram(vertPhong, fragPhong);
+
     shaders.push_back(phongShader);
+    shaders.push_back(fragPhongBad);
+	shaders.push_back(vertPhongBad);
 
     Shader vertBlinn(GL_VERTEX_SHADER, "shaders/blinn.vert");
     Shader fragBlinn(GL_FRAGMENT_SHADER, "shaders/blinn.frag");
@@ -220,12 +229,48 @@ void Application::createShaders() {
     blinnColorShader = new ShaderProgram(vertBlinnColor, fragBlinnColor);
     shaders.push_back(blinnColorShader);
 
+	Shader vertNight(GL_VERTEX_SHADER, "shaders/night_forest.vert");
+	Shader fragNight(GL_FRAGMENT_SHADER, "shaders/night_forest.frag");
+	nightShader = new ShaderProgram(vertNight, fragNight);
+	shaders.push_back(nightShader);
+
+    Shader vertTex(GL_VERTEX_SHADER, "shaders/texture.vert");
+    Shader fragTex(GL_FRAGMENT_SHADER, "shaders/texture.frag");
+    textureShader = new ShaderProgram(vertTex, fragTex);
+    shaders.push_back(textureShader);
 
     for (ShaderProgram* sp : shaders) {
         camera->attach(sp);
     }
 }
 
+GLuint loadTexture(const char* filePath) {
+    int text_width, text_height, channels;
+    stbi_set_flip_vertically_on_load(true);
+
+    unsigned char* data = stbi_load(filePath, &text_width, &text_height, &channels, 4);
+    if (!data) {
+        std::cerr << "Error loading texture: " << filePath << std::endl;
+        return 0;
+    }
+
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, text_width, text_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return tex;
+}
 
 void Application::createModels() {
     models.push_back(new Model(triangleVertices, sizeof(triangleVertices), 3));
@@ -243,6 +288,8 @@ void Application::createModels() {
     models.push_back(new Model(clockModel, sizeof(clockModel), static_cast<GLsizei>(vertexCount), true));
 
     models.push_back(new Model(rocketModel, sizeof(rocketModel), static_cast<GLsizei>(vertexRocketCount), true));
+
+    models.push_back(new Model(plain, sizeof(plain), 6, false, true));
 }
 
 void Application::addWatermark(Scene* scene) {
@@ -297,15 +344,18 @@ void Application::createScenes() {
     scenes.push_back(scene2);
 
     Scene* scene3 = new Scene("3: Forest");
+    glm::vec3 fireflyPos(0.0f, 0.8f, 0.0f);
+    glm::vec3 fireflyColor(0.9f, 1.0f, 0.3f);
+
     auto plainComp = std::make_shared<CompositeTransformation>();
     plainComp->add(std::make_shared<Translation>(0.0f, -0.65f, 0.0f));
     plainComp->add(std::make_shared<Scale>(15.0f, 1.0f, 15.0f));
-    scene3->addObject(new DrawableObject(models[2], shaders[2], plainComp, glm::vec3(0.18f, 0.38f, 0.16f)));
+    scene3->addObject(new DrawableObject(models[2], nightShader, plainComp, glm::vec3(0.18f, 0.38f, 0.16f)));
 
-    auto forestSunComp = std::make_shared<CompositeTransformation>();
-    forestSunComp->add(std::make_shared<Translation>(12.0f, 16.0f, -12.0f));
-    forestSunComp->add(std::make_shared<Scale>(1.8f));
-    scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.25f)));
+    //auto forestSunComp = std::make_shared<CompositeTransformation>();
+    //forestSunComp->add(std::make_shared<Translation>(12.0f, 16.0f, -12.0f));
+    //forestSunComp->add(std::make_shared<Scale>(1.8f));
+    //scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.25f)));
 
     auto getRandomFloat = [](float minVal, float maxVal) -> float {
         return minVal + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (maxVal - minVal)));
@@ -318,6 +368,10 @@ void Application::createScenes() {
 
         if (std::abs(posX) < 1.5f && std::abs(posZ) < 1.5f) {
             posX += (posX >= 0.0f ? 2.5f : -2.5f);
+        }
+
+        if (glm::distance(glm::vec2(posX, posZ), glm::vec2(fireflyPos.x, fireflyPos.z)) < 0.8f) {
+            posX += 1.5f;
         }
 
         float posY = -0.65f;
@@ -334,7 +388,7 @@ void Application::createScenes() {
         float blueShade = getRandomFloat(0.10f, 0.20f);
         glm::vec3 treeFoliageColor(redShade, greenShade, blueShade);
 
-        scene3->addObject(new DrawableObject(models[3], treeShader, treeComp, treeFoliageColor));
+        scene3->addObject(new DrawableObject(models[3], nightShader, treeComp, treeFoliageColor));
     }
 
     const int bushCount = 40;
@@ -353,7 +407,7 @@ void Application::createScenes() {
         float greenBush = getRandomFloat(0.55f, 0.75f);
         glm::vec3 bushColor(0.15f, greenBush, 0.18f);
 
-        scene3->addObject(new DrawableObject(models[4], shaders[2], bushComp, bushColor));
+        scene3->addObject(new DrawableObject(models[4], nightShader, bushComp, bushColor));
     }
 
     auto forestClock1 = std::make_shared<CompositeTransformation>();
@@ -368,6 +422,11 @@ void Application::createScenes() {
     forestClock2->add(std::make_shared<Rotation>(glm::radians(-40.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
     forestClock2->add(std::make_shared<Scale>(1.6f, 1.6f, -1.6f));
     scene3->addObject(new DrawableObject(models[10], clockShader, forestClock2));
+
+    auto fireflyComp = std::make_shared<CompositeTransformation>();
+    fireflyComp->add(std::make_shared<Translation>(fireflyPos.x, fireflyPos.y, fireflyPos.z));
+    fireflyComp->add(std::make_shared<Scale>(0.05f));
+    scene3->addObject(new DrawableObject(models[1], shaders[2], fireflyComp, fireflyColor));
 
     addWatermark(scene3);
     scenes.push_back(scene3);
@@ -434,25 +493,33 @@ void Application::createScenes() {
     auto topComp = std::make_shared<CompositeTransformation>();
     topComp->add(std::make_shared<Translation>(0.0f, 2.0f, 0.0f));
     topComp->add(std::make_shared<Scale>(0.65f));
-    scene7->addObject(new DrawableObject(models[1], ambientShader, topComp));
+    scene7->addObject(new DrawableObject(models[1], blinnShader, topComp));
 
     auto bottomComp = std::make_shared<CompositeTransformation>();
     bottomComp->add(std::make_shared<Translation>(0.0f, -2.0f, 0.0f));
     bottomComp->add(std::make_shared<Scale>(0.65f));
-    scene7->addObject(new DrawableObject(models[1], shaders[6], bottomComp)); 
+    scene7->addObject(new DrawableObject(models[1], blinnShader, bottomComp));
 
     auto leftComp = std::make_shared<CompositeTransformation>();
     leftComp->add(std::make_shared<Translation>(-2.0f, 0.0f, 0.0f));
-    leftComp->add(std::make_shared<Scale>(0.65f));
+    leftComp->add(std::make_shared<Scale>(1.5f, 0.5f, 1.0f));
     scene7->addObject(new DrawableObject(models[1], phongShader, leftComp));
 
     auto rightComp = std::make_shared<CompositeTransformation>();
     rightComp->add(std::make_shared<Translation>(2.0f, 0.0f, 0.0f));
-    rightComp->add(std::make_shared<Scale>(0.65f));
-    scene7->addObject(new DrawableObject(models[1], blinnShader, rightComp));
+    rightComp->add(std::make_shared<Scale>(1.5f, 0.5f, 1.0f));
+    scene7->addObject(new DrawableObject(models[1], phongShader, rightComp));
 
 	addWatermark(scene7);
     scenes.push_back(scene7);
+
+    GLuint fenceTex = loadTexture("textures/wooden_fence.png");
+
+    Scene* scene8 = new Scene("Fence Scene");
+    auto comp = std::make_shared<CompositeTransformation>();
+
+    scene8->addObject(new DrawableObject(models[12], textureShader, comp, glm::vec3(1.0f), fenceTex));
+    scenes.push_back(scene8);
 }
 
 void Application::processInput() {
@@ -515,6 +582,18 @@ void Application::run() {
             clockShader->setUniform("uHourAngle", hourAngle);
         }
 
+        if (activeSceneIndex == 2 && nightShader != nullptr) {
+            nightShader->use();
+
+            nightShader->setUniform("lightPosition", glm::vec3(0.0f, 0.8f, 0.0f));
+            nightShader->setUniform("lightColor", glm::vec3(0.9f, 1.0f, 0.3f) * 2.5f);
+            nightShader->setUniform("cameraPosition", camera->getPosition());
+
+            nightShader->setUniform("constantAttenuation", 1.0f);
+            nightShader->setUniform("linearAttenuation", 0.09f);
+            nightShader->setUniform("quadraticAttenuation", 0.032f);
+        }
+
         if (activeSceneIndex < scenes.size() && scenes[activeSceneIndex] != nullptr) {
             scenes[activeSceneIndex]->render();
         }
@@ -529,7 +608,7 @@ void Application::handleKeyboard(int key, int action) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_7) {
+        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_8) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
             if (camera) {
                 activeSceneIndex = idx;

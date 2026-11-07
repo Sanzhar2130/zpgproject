@@ -5,7 +5,7 @@
  */
 #include "Model.h"
 
-Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor)
+Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool hasColor, bool hasTexture)
     : VAO(0), VBO(0), vertexCount(count) {
 
     glGenVertexArrays(1, &VAO);
@@ -15,7 +15,20 @@ Model::Model(const float* vertices, GLsizeiptr dataSize, GLsizei count, bool has
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, dataSize, vertices, GL_STATIC_DRAW);
 
-    if (hasColor) {
+	if (hasTexture) {
+        GLsizei stride = 8 * sizeof(float);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void*)0);
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (const void*)(3 * sizeof(float)));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (const void*)(6 * sizeof(float)));
+	}
+    
+    else if (hasColor) {
         GLsizei stride = 9 * sizeof(float);
 
         glEnableVertexAttribArray(0);

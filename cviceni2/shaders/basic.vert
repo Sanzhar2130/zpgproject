@@ -1,16 +1,21 @@
-#version 330 core
+#version 460 core
 
-layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec3 inColor;
+layout (location = 0) in vec3 vertexPosition;
+layout (location = 1) in vec3 vertexNormal;
+layout (location = 2) in vec2 vertexUV;
 
-uniform mat4 modelMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 projectMatrix;
+out vec2 uv;
 
-out vec3 fragColor;
+uniform mat4 modelMatrix=mat4(1.0);
+uniform mat4 viewMatrix=mat4(1.0);
+uniform mat4 projectionMatrix=mat4(1.0);
+
+
 
 void main()
 {
-    gl_Position = projectMatrix * viewMatrix * modelMatrix * vec4(inPosition, 1.0);
-    fragColor = inColor;
+    mat3 normalMatrix=transpose(inverse(mat3(modelMatrix)));
+    vec3 normalWorld=normalMatrix * vertexNormal; 
+    uv=vertexUV;
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vertexPosition, 1.0);
 }

@@ -18,11 +18,13 @@ private:
     ShaderProgram* shaderProgram;
     std::shared_ptr<Transformation> transformation;
     glm::vec3 color;
+    GLuint textureID;
 
 public:
     DrawableObject(Model* m, ShaderProgram* sp,
         std::shared_ptr<Transformation> t = nullptr,
-        const glm::vec3& c = glm::vec3(1.0f));
+        const glm::vec3& c = glm::vec3(1.0f),
+        GLuint texID = 0);
 
     void draw() const;
 

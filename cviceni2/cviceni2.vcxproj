@@ -163,6 +163,7 @@
     <ClInclude Include="models\gift.h" />
     <ClInclude Include="models\moon.h" />
     <ClInclude Include="models\plain.h" />
+    <ClInclude Include="models\plain2.h" />
     <ClInclude Include="models\rocket.h" />
     <ClInclude Include="models\sphere.h" />
     <ClInclude Include="models\sun.h" />
@@ -186,8 +187,12 @@
     <None Include="shaders\color_uniform.frag" />
     <None Include="shaders\lambert.frag" />
     <None Include="shaders\lambert.vert" />
+    <None Include="shaders\night_forest.frag" />
+    <None Include="shaders\night_forest.vert" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\phong.vert" />
+    <None Include="shaders\texture.frag" />
+    <None Include="shaders\texture.vert" />
     <None Include="shaders\tree.frag" />
     <None Include="shaders\tree.vert" />
     <None Include="shaders\vertex_color.frag" />
@@ -233,6 +238,9 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\ZPG\cviceni2\cviceni2\cviceni2\include;$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Translation.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\wooden_fence.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
