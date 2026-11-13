@@ -21,6 +21,15 @@
 #include "../models/zha0067.h"
 #include "../models/clock.h"
 #include "../models/rocket.h"
+#include "../models/Shrek.h"
+#include "../models/Fiona.h"
+#include "../models/Skybox.h"
+#include "../models/EB408.h"
+#include "../models/door.h"
+#include "../models/door_frame.h"
+#include "../models/whiteboard.h"
+#include <../models/table.h>
+#include <../models/orange_chair.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -168,6 +177,7 @@ void Application::initialization() {
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxUnits);
     std::cout << "Texture units available in Fragment Shader: " << maxUnits << std::endl;
 
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -216,8 +226,6 @@ void Application::createShaders() {
     phongShader = new ShaderProgram(vertPhong, fragPhong);
 
     shaders.push_back(phongShader);
-    shaders.push_back(fragPhongBad);
-	shaders.push_back(vertPhongBad);
 
     Shader vertBlinn(GL_VERTEX_SHADER, "shaders/blinn.vert");
     Shader fragBlinn(GL_FRAGMENT_SHADER, "shaders/blinn.frag");
@@ -238,6 +246,11 @@ void Application::createShaders() {
     Shader fragTex(GL_FRAGMENT_SHADER, "shaders/texture.frag");
     textureShader = new ShaderProgram(vertTex, fragTex);
     shaders.push_back(textureShader);
+
+    Shader vertSkybox(GL_VERTEX_SHADER, "shaders/skybox.vert");
+    Shader fragSkybox(GL_FRAGMENT_SHADER, "shaders/skybox.frag");
+    skyboxShader = new ShaderProgram(vertSkybox, fragSkybox);
+    shaders.push_back(skyboxShader);
 
     for (ShaderProgram* sp : shaders) {
         camera->attach(sp);
@@ -272,6 +285,36 @@ GLuint loadTexture(const char* filePath) {
     return tex;
 }
 
+GLuint loadCubemap(const std::vector<const char*>& faces) {
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    stbi_set_flip_vertically_on_load(false);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++) {
+        unsigned char* data = stbi_load(faces[i], &width, &height, &nrChannels, 0);
+        if (data) {
+            GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else {
+            std::cerr << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
 void Application::createModels() {
     models.push_back(new Model(triangleVertices, sizeof(triangleVertices), 3));
     models.push_back(new Model(sphere, sizeof(sphere), 2880));
@@ -290,6 +333,23 @@ void Application::createModels() {
     models.push_back(new Model(rocketModel, sizeof(rocketModel), static_cast<GLsizei>(vertexRocketCount), true));
 
     models.push_back(new Model(plain, sizeof(plain), 6, false, true));
+
+    GLsizei shrekVerticesCount = static_cast<GLsizei>(sizeof(ShrekModel) / (8 * sizeof(float)));
+    models.push_back(new Model(ShrekModel, sizeof(ShrekModel), shrekVerticesCount, false, true));
+
+	GLsizei fionaVerticesCount = static_cast<GLsizei>(sizeof(FionaModel) / (8 * sizeof(float)));
+	models.push_back(new Model(FionaModel, sizeof(FionaModel), fionaVerticesCount, false, true));
+
+    models.push_back(new Model(CubeModel, sizeof(CubeModel), CubeVertexCount, false, true));
+
+    models.push_back(new Model(SM_EB408Model, sizeof(SM_EB408Model), SM_EB408VertexCount, false, true));
+    models.push_back(new Model(SM_DoorFrame_vertices, sizeof(SM_DoorFrame_vertices), SM_DoorFrame_vertex_count, false, true));
+    models.push_back(new Model(SM_Door_vertices, sizeof(SM_Door_vertices), SM_Door_vertex_count, false, true));
+    models.push_back(new Model(SM_Whiteboard_vertices, sizeof(SM_Whiteboard_vertices), SM_Whiteboard_vertex_count, false, true));
+	models.push_back(new Model(SM_Table_vertices, sizeof(SM_Table_vertices), SM_Table_vertex_count, false, true));
+	models.push_back(new Model(OrangeChair_vertices, sizeof(OrangeChair_vertices), OrangeChair_vertex_count, false, true));
+
+
 }
 
 void Application::addWatermark(Scene* scene) {
@@ -308,9 +368,15 @@ void Application::addWatermark(Scene* scene) {
     } else if (name.find("Lighting") != std::string::npos || name.find("Models") != std::string::npos) {
         wmComp->add(std::make_shared<Translation>(2.0f, -1.5f, 0.0f));
         wmComp->add(std::make_shared<Scale>(0.6f, 0.6f, 0.001f));
-    } else {
+    }
+    else if (name.find("EB408 Model") != std::string::npos || name.find("EB408 Model") != std::string::npos){
+        wmComp->add(std::make_shared<Translation>(-1.1f, 0.8f, 1.5f));
+        wmComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+        wmComp->add(std::make_shared<Scale>(0.15f, 0.15f, 0.001f));
+    }
+    else {
         wmComp->add(std::make_shared<Translation>(1.5f, -0.75f, 0.0f));
-        wmComp->add(std::make_shared<Scale>(0.18f, 0.18f, 0.001f));
+        wmComp->add(std::make_shared<Scale>(0.1f, 0.1f, 0.001f));
     }
 
     scene->addObject(new DrawableObject(models[6], shaders[2], wmComp, glm::vec3(0.0f, 0.0f, 1.0f)));
@@ -502,28 +568,150 @@ void Application::createScenes() {
 
     auto leftComp = std::make_shared<CompositeTransformation>();
     leftComp->add(std::make_shared<Translation>(-2.0f, 0.0f, 0.0f));
-    leftComp->add(std::make_shared<Scale>(1.5f, 0.5f, 1.0f));
+    leftComp->add(std::make_shared<Scale>(0.65f));
     scene7->addObject(new DrawableObject(models[1], phongShader, leftComp));
 
     auto rightComp = std::make_shared<CompositeTransformation>();
     rightComp->add(std::make_shared<Translation>(2.0f, 0.0f, 0.0f));
-    rightComp->add(std::make_shared<Scale>(1.5f, 0.5f, 1.0f));
+    rightComp->add(std::make_shared<Scale>(0.65f));
     scene7->addObject(new DrawableObject(models[1], phongShader, rightComp));
 
 	addWatermark(scene7);
     scenes.push_back(scene7);
 
-    GLuint fenceTex = loadTexture("textures/wooden_fence.png");
+    //GLuint fenceTex = loadTexture("textures/wooden_fence.png");
 
-    Scene* scene8 = new Scene("Fence Scene");
-    auto comp = std::make_shared<CompositeTransformation>();
+    //Scene* scene8 = new Scene("Fence Scene");
+    //auto comp = std::make_shared<CompositeTransformation>();
 
-    scene8->addObject(new DrawableObject(models[12], textureShader, comp, glm::vec3(1.0f), fenceTex));
+    //scene8->addObject(new DrawableObject(models[12], textureShader, comp, glm::vec3(1.0f), fenceTex));
+    //scenes.push_back(scene8);
+
+    Scene* scene8 = new Scene("8: Shrek Scene");
+
+	GLuint shrekTex = loadTexture("textures/shrek.png");
+	GLuint fionaTex = loadTexture("textures/fiona.png");
+
+    //auto groundComp = std::make_shared<CompositeTransformation>();
+    //groundComp->add(std::make_shared<Translation>(0.0f, -1.0f, 0.0f));
+    //groundComp->add(std::make_shared<Scale>(10.0f, 1.0f, 10.0f));
+    //scene9->addObject(new DrawableObject(models[2], nightShader, groundComp, glm::vec3(0.12f, 0.32f, 0.10f)));
+
+    std::vector<const char*> skyboxFaces = {
+        "textures/posx.jpg",
+        "textures/negx.jpg",
+        "textures/posy.jpg",
+        "textures/negy.jpg",
+        "textures/posz.jpg",
+        "textures/negz.jpg"
+    };
+    skyboxTex = loadCubemap(skyboxFaces);
+
+    auto shrekComp = std::make_shared<CompositeTransformation>();
+    shrekComp->add(std::make_shared<Translation>(0.0f, -1.0f, 0.0f));
+    shrekComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    shrekComp->add(std::make_shared<Scale>(0.75f));
+
+    auto fionaComp = std::make_shared<CompositeTransformation>();
+    fionaComp->add(std::make_shared<Translation>(-2.0f, -1.0f, 0.0f));
+    fionaComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    fionaComp->add(std::make_shared<Scale>(0.75f));
+
+    scene8->addObject(new DrawableObject(models[13], textureShader, shrekComp, glm::vec3(1.0f), shrekTex));
+    scene8->addObject(new DrawableObject(models[14], textureShader, fionaComp, glm::vec3(1.0f), fionaTex));
+    addWatermark(scene8);
     scenes.push_back(scene8);
+
+    Scene* scene9 = new Scene("9: EB408 Model");
+
+    std::vector<const char*> skyboxEB408 = {
+        "textures/posx.jpg",
+        "textures/negx.jpg",
+        "textures/posy.jpg",
+        "textures/negy.jpg",
+        "textures/posz.jpg",
+        "textures/negz.jpg"
+    };
+    skyboxTex = loadCubemap(skyboxEB408);
+
+    auto ebComp = std::make_shared<CompositeTransformation>();
+    ebComp->add(std::make_shared<Translation>(0.0f, 0.0f, 0.0f));
+    ebComp->add(std::make_shared<Scale>(0.3f));
+
+    auto doorFrameComp = std::make_shared<CompositeTransformation>();
+    doorFrameComp->add(std::make_shared<Translation>(-0.73f, 0.0f, 2.35f));
+    doorFrameComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    doorFrameComp->add(std::make_shared<Scale>(0.003f));
+
+    auto doorComp = std::make_shared<CompositeTransformation>();
+    doorComp->add(std::make_shared<Translation>(-0.73f, 0.0f, 2.35f));
+    doorComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    doorComp->add(std::make_shared<Scale>(0.003f));
+
+    auto wbComp = std::make_shared<CompositeTransformation>();
+    wbComp->add(std::make_shared<Translation>(-1.1f, 0.085f, 0.85f));
+    wbComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    wbComp->add(std::make_shared<Scale>(0.3f));
+
+    auto shrekebComp = std::make_shared<CompositeTransformation>();
+    shrekebComp->add(std::make_shared<Translation>(-0.8f, 0.085f, 1.5f));
+    shrekebComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    shrekebComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shrekebComp->add(std::make_shared<Scale>(0.3f));
+
+    GLuint ebTex = loadTexture("textures/T_EB408.png");
+	GLuint doorTex = loadTexture("textures/T_door_basecolor.png");
+    GLuint wbTex = loadTexture("textures/T_Whiteboard_BaseColor.png");
+	GLuint tableTex = loadTexture("textures/T_Table_BaseColor.png");
+	GLuint ocTex = loadTexture("textures/T_OrangeChair_BaseColor.png");
+    GLuint shrekebTex = loadTexture("textures/shrek.png");
+
+    scene9->addObject(new DrawableObject(models[16], textureShader, ebComp, glm::vec3(1.0f), ebTex));
+    scene9->addObject(new DrawableObject(models[17], textureShader, doorFrameComp, glm::vec3(1.0f), doorTex));
+    scene9->addObject(new DrawableObject(models[18], textureShader, doorComp, glm::vec3(1.0f), doorTex));
+    scene9->addObject(new DrawableObject(models[19], textureShader, wbComp, glm::vec3(1.0f), wbTex));
+    scene9->addObject(new DrawableObject(models[13], textureShader, shrekebComp, glm::vec3(1.0f), shrekebTex));
+
+    const int numRows = 3; 
+    const int tablesPerRow = 3;
+
+    const float startX = -0.45f;
+    const float startZ = 0.35f;
+
+    const float stepX = 0.5f;  
+    const float stepZ = 0.45f;  
+    
+    const float chairOffsetX = 0.18f;
+    const float chairOffsetZ = 0.0f;
+
+    for (int r = 0; r < numRows; ++r) {
+        for (int c = 0; c < tablesPerRow; ++c) {
+            float posX = startX + c * stepX;
+            float posZ = startZ + r * stepZ;
+
+            auto tableComp = std::make_shared<CompositeTransformation>();
+            tableComp->add(std::make_shared<Translation>(posX, 0.0f, posZ));
+            tableComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+            tableComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+            tableComp->add(std::make_shared<Scale>(0.3f));
+            scene9->addObject(new DrawableObject(models[20], textureShader, tableComp, glm::vec3(1.0f), tableTex));
+
+            auto ocComp = std::make_shared<CompositeTransformation>();
+            ocComp->add(std::make_shared<Translation>(posX + chairOffsetX, 0.0f, posZ + chairOffsetZ));
+            ocComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+            ocComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+            ocComp->add(std::make_shared<Scale>(0.3f));
+            scene9->addObject(new DrawableObject(models[21], textureShader, ocComp, glm::vec3(1.0f), ocTex));
+        }
+    }
+
+   
+    addWatermark(scene9);
+    scenes.push_back(scene9);
 }
 
 void Application::processInput() {
-    float cameraSpeed = 5.0f * deltaTime;
+    float cameraSpeed = 3.0f * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera->moveForward(cameraSpeed);
@@ -593,6 +781,27 @@ void Application::run() {
             nightShader->setUniform("linearAttenuation", 0.09f);
             nightShader->setUniform("quadraticAttenuation", 0.032f);
         }
+        if (activeSceneIndex == 7 && skyboxShader != nullptr) {
+            glDepthFunc(GL_LEQUAL);
+
+            skyboxShader->use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+            skyboxShader->setUniform("skybox", 0);
+
+            models[15]->draw();
+
+            glDepthFunc(GL_LESS);
+		}
+		else if (activeSceneIndex == 8 && skyboxShader != nullptr) {
+			glDepthFunc(GL_LEQUAL);
+			skyboxShader->use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+			skyboxShader->setUniform("skybox", 0);
+			models[15]->draw();
+			glDepthFunc(GL_LESS);
+		}
 
         if (activeSceneIndex < scenes.size() && scenes[activeSceneIndex] != nullptr) {
             scenes[activeSceneIndex]->render();
@@ -608,7 +817,7 @@ void Application::handleKeyboard(int key, int action) {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_8) {
+        else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
             if (camera) {
                 activeSceneIndex = idx;

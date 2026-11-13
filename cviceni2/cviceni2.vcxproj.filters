@@ -117,6 +117,33 @@
     <ClInclude Include="models\plain2.h">
       <Filter>models</Filter>
     </ClInclude>
+    <ClInclude Include="models\Fiona.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Shrek.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Skybox.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\EB408.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\door.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\door_frame.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\whiteboard.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\orange_chair.h">
+      <Filter>models</Filter>
+    </ClInclude>
+    <ClInclude Include="models\table.h">
+      <Filter>models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\vertex_color.vert">
@@ -194,6 +221,12 @@
     <None Include="shaders\texture.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\skybox.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -238,6 +271,39 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\wooden_fence.png">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\fiona.png">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\shrek.png">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\negx.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\negy.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\negz.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\posx.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\posy.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\posz.jpg">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\T_door_basecolor.png">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\T_OrangeChair_BaseColor.png">
+      <Filter>textures</Filter>
+    </Image>
+    <Image Include="textures\T_Table_BaseColor.png">
       <Filter>textures</Filter>
     </Image>
   </ItemGroup>

@@ -42,6 +42,8 @@ private:
     ShaderProgram* fragPhongBad;
 	ShaderProgram* nightShader;
 	ShaderProgram* textureShader;
+    ShaderProgram* skyboxShader = nullptr;
+    GLuint skyboxTex = 0;
 
 
     Camera* camera;

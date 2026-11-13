@@ -159,17 +159,26 @@
     <ClInclude Include="include\Translation.h" />
     <ClInclude Include="models\bushes.h" />
     <ClInclude Include="models\clock.h" />
+    <ClInclude Include="models\door.h" />
+    <ClInclude Include="models\door_frame.h" />
     <ClInclude Include="models\earth.h" />
+    <ClInclude Include="models\EB408.h" />
+    <ClInclude Include="models\Fiona.h" />
     <ClInclude Include="models\gift.h" />
     <ClInclude Include="models\moon.h" />
+    <ClInclude Include="models\orange_chair.h" />
     <ClInclude Include="models\plain.h" />
     <ClInclude Include="models\plain2.h" />
     <ClInclude Include="models\rocket.h" />
+    <ClInclude Include="models\Shrek.h" />
+    <ClInclude Include="models\Skybox.h" />
     <ClInclude Include="models\sphere.h" />
     <ClInclude Include="models\sun.h" />
     <ClInclude Include="models\suzi_flat.h" />
     <ClInclude Include="models\suzi_smooth.h" />
+    <ClInclude Include="models\table.h" />
     <ClInclude Include="models\tree.h" />
+    <ClInclude Include="models\whiteboard.h" />
     <ClInclude Include="models\zha0067.h" />
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +200,8 @@
     <None Include="shaders\night_forest.vert" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\phong.vert" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
     <None Include="shaders\texture.frag" />
     <None Include="shaders\texture.vert" />
     <None Include="shaders\tree.frag" />
@@ -240,6 +251,17 @@
     <ClCompile Include="src\Translation.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="textures\fiona.png" />
+    <Image Include="textures\negx.jpg" />
+    <Image Include="textures\negy.jpg" />
+    <Image Include="textures\negz.jpg" />
+    <Image Include="textures\posx.jpg" />
+    <Image Include="textures\posy.jpg" />
+    <Image Include="textures\posz.jpg" />
+    <Image Include="textures\shrek.png" />
+    <Image Include="textures\T_door_basecolor.png" />
+    <Image Include="textures\T_OrangeChair_BaseColor.png" />
+    <Image Include="textures\T_Table_BaseColor.png" />
     <Image Include="textures\wooden_fence.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
