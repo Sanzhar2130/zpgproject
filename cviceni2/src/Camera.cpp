@@ -22,7 +22,6 @@ Camera::Camera(glm::vec3 startEye, float startAlpha, float startFi, float screen
 }
 
 void Camera::updateVectors() {
-    // Calculation of the view direction vector
     target.x = sin(alpha) * cos(fi);
     target.z = sin(alpha) * sin(fi);
     target.y = cos(alpha);
@@ -32,14 +31,12 @@ void Camera::updateVectors() {
 }
 
 void Camera::updateView() {
-    // Formation of the view matrix: LookAt(eye, where we look, where up)
     viewMatrix = glm::lookAt(eye, eye + target, up);
     notify();
 }
 
 void Camera::updateProjection() {
     if (projType == ProjectionType::Perspective) {
-        // zNear is strictly 0.1f (not 0.0f to eliminate division by zero in the Z-buffer)
         projectionMatrix = glm::perspective(fov, aspect, zNear, zFar);
     }
     else {
@@ -52,7 +49,6 @@ void Camera::updateProjection() {
 void Camera::attach(Observer* observer) {
     if (observer) {
         observers.push_back(observer);
-        // Immediately pass the current state to the new observer
         observer->update(viewMatrix, projectionMatrix);
     }
 }
@@ -73,7 +69,6 @@ void Camera::handleMouseMovement(float xOffset, float yOffset, float sensitivity
     fi += xOffset * sensitivity;
     alpha -= yOffset * sensitivity;
 
-    // Gimbal Lock Protection: limit alpha zenith angle
     const float eps = 0.01f;
     if (alpha < eps) alpha = eps;
     if (alpha > glm::pi<float>() - eps) alpha = glm::pi<float>() - eps;

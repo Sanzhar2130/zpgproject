@@ -5,7 +5,7 @@ in vec3 worldNormal;
 
 uniform vec3 lightPosition;
 uniform vec3 lightColor;
-uniform vec3 objectColor;
+uniform vec3 uColor;
 uniform vec3 cameraPosition;
 
 uniform float constantAttenuation;
@@ -16,7 +16,7 @@ out vec4 out_Color;
 
 void main(void)
 {
-    vec3 ambient = vec3(0.05, 0.05, 0.08) * objectColor;
+    vec3 ambient = vec3(0.05, 0.05, 0.08) * uColor;
 
     vec3 lightDir = lightPosition - worldPosition;
     float distance = length(lightDir);
@@ -27,7 +27,7 @@ void main(void)
     float attenuation = 1.0 / (constantAttenuation + linearAttenuation * distance + quadraticAttenuation * (distance * distance));
 
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor * objectColor;
+    vec3 diffuse = diff * lightColor * uColor;
 
     vec3 viewDir = normalize(cameraPosition - worldPosition);
     vec3 halfVector = normalize(lightDir + viewDir);

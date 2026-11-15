@@ -19,12 +19,15 @@ private:
     std::shared_ptr<Transformation> transformation;
     glm::vec3 color;
     GLuint textureID;
+    GLuint id;
+    bool selected;
 
 public:
     DrawableObject(Model* m, ShaderProgram* sp,
         std::shared_ptr<Transformation> t = nullptr,
         const glm::vec3& c = glm::vec3(1.0f),
-        GLuint texID = 0);
+        GLuint texID = 0, 
+        GLuint objectID = 0);
 
     void draw() const;
 
@@ -33,4 +36,10 @@ public:
 
     void setColor(const glm::vec3& c) { color = c; }
     glm::vec3 getColor() const { return color; }
+
+    void setID(GLuint newID) { id = newID; }
+    GLuint getID() const { return id; }
+
+    void setSelected(bool isSelected) { selected = isSelected; }
+    bool isSelected() const { return selected; }
 };

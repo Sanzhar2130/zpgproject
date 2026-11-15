@@ -3,12 +3,15 @@
  * @author Student (login: ZHA0067)
  * @brief Application lifecycle coordinator with static scenes and scene switcher.
  */
+
 #include "Application.h"
 #include <iostream>
+#include <cstdio>
 #include <cstdlib>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 #include <ctime>
+#include <algorithm>
 
 #include "../models/sun.h"
 #include "../models/earth.h"
@@ -56,8 +59,10 @@ void Application::window_size_callback(GLFWwindow* window, int width, int height
     if (app) {
         app->windowWidth = width;
         app->windowHeight = height;
-        float aspect = (height > 0) ? (static_cast<float>(width) / static_cast<float>(height)) : 1.0f;
-        app->camera->setAspect(aspect);
+        if (app->camera) {
+            float aspect = (height > 0) ? (static_cast<float>(width) / static_cast<float>(height)) : 1.0f;
+            app->camera->setAspect(aspect);
+        }
     }
 }
 
@@ -72,8 +77,10 @@ Application::Application()
     : window(nullptr), windowWidth(1024), windowHeight(768), activeSceneIndex(0),
     camera(nullptr), lastX(512.0), lastY(384.0), firstMouse(true),
     isMousePressed(false), deltaTime(0.0f), lastFrame(0.0f),
-    clockShader(nullptr), treeShader(nullptr) {}
-
+    clockShader(nullptr), treeShader(nullptr), skyboxShader(nullptr),
+    phongShader(nullptr), blinnShader(nullptr), ambientShader(nullptr),
+    blinnColorShader(nullptr), vertPhongBad(nullptr), fragPhongBad(nullptr),
+    nightShader(nullptr), textureShader(nullptr) {}
 
 void Application::mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
@@ -90,10 +97,222 @@ void Application::handleMouseButton(int button, int action, int mods) {
             glfwGetCursorPos(window, &xpos, &ypos);
             lastX = xpos;
             lastY = ypos;
+
+            if (button == GLFW_MOUSE_BUTTON_LEFT) {
+                bool isCtrlPressed = ((mods & GLFW_MOD_CONTROL) != 0) ||
+                    (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) ||
+                    (glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS);
+
+                forceStaticPlaceOnce = isCtrlPressed;
+                pendingClickAction = true;
+                pickCursorX = xpos;
+                pickCursorY = ypos;
+            }
         }
         else if (action == GLFW_RELEASE) {
             isMousePressed = false;
         }
+    }
+}
+void Application::performPicking() {
+    if (!pendingClickAction) return;
+    pendingClickAction = false;
+
+    InteractionMode activeMode = forceStaticPlaceOnce ? InteractionMode::PlaceStatic : interactionMode;
+    forceStaticPlaceOnce = false;
+
+    int winW = 0, winH = 0;
+    int fbW = 0, fbH = 0;
+    glfwGetWindowSize(window, &winW, &winH);
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+
+    if (winW <= 0 || winH <= 0 || fbW <= 0 || fbH <= 0) return;
+
+    double scaleX = static_cast<double>(fbW) / static_cast<double>(winW);
+    double scaleY = static_cast<double>(fbH) / static_cast<double>(winH);
+
+    GLint x = static_cast<GLint>(pickCursorX * scaleX);
+    GLint y = static_cast<GLint>(pickCursorY * scaleY);
+    GLint newy = fbH - y;
+
+    if (x < 0 || x >= fbW || newy < 0 || newy >= fbH) return;
+
+    GLubyte color[4] = { 0, 0, 0, 0 };
+    GLfloat depth = 0.0f;
+    GLuint index = 0;
+
+    glReadPixels(x, newy, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, color);
+    glReadPixels(x, newy, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    glReadPixels(x, newy, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &index);
+
+    if (activeSceneIndex >= scenes.size() || scenes[activeSceneIndex] == nullptr) return;
+    Scene* currentScene = scenes[activeSceneIndex];
+
+    bool isSupportedScene = (activeSceneIndex == 2 || activeSceneIndex == 7 || activeSceneIndex == 8);
+
+    if (activeMode == InteractionMode::PlaceStatic && camera != nullptr) {
+        if (!isSupportedScene) {
+            std::cout << "Object placement is enabled in scenes: 3 (Forest), 8 (Shrek), 9 (EB408)." << std::endl;
+            return;
+        }
+        if (depth >= 1.0f) {
+            std::cout << "Click on a surface or object, not on the skybox." << std::endl;
+            return;
+        }
+
+        glm::vec3 screenPos(static_cast<float>(x), static_cast<float>(newy), depth);
+        glm::mat4 view = camera->getViewMatrix();
+        glm::mat4 projection = camera->getProjectionMatrix();
+        glm::vec4 viewport(0.0f, 0.0f, static_cast<float>(fbW), static_cast<float>(fbH));
+        glm::vec3 worldPos = glm::unProject(screenPos, view, projection, viewport);
+
+        auto getRandomFloat = [](float minVal, float maxVal) -> float {
+            return minVal + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (maxVal - minVal)));
+            };
+
+        float rotAngle = getRandomFloat(0.0f, 360.0f);
+        auto objComp = std::make_shared<CompositeTransformation>();
+        DrawableObject* newObj = nullptr;
+
+        if (activeSceneIndex == 2 || activeSceneIndex == 7) {
+            if (placeAlternateToggle) {
+                float treeScale = getRandomFloat(0.28f, 0.45f);
+                objComp->add(std::make_shared<Translation>(worldPos));
+                objComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
+                objComp->add(std::make_shared<Scale>(treeScale));
+
+                glm::vec3 treeColor(getRandomFloat(0.08f, 0.22f), getRandomFloat(0.45f, 0.68f), getRandomFloat(0.10f, 0.20f));
+                newObj = new DrawableObject(models[3], nightShader, objComp, treeColor);
+            }
+            else {
+                float bushScale = getRandomFloat(0.16f, 0.28f);
+                objComp->add(std::make_shared<Translation>(worldPos.x, worldPos.y + 0.07f, worldPos.z));
+                objComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
+                objComp->add(std::make_shared<Scale>(bushScale));
+
+                glm::vec3 bushColor(0.15f, getRandomFloat(0.55f, 0.78f), 0.18f);
+                newObj = new DrawableObject(models[4], nightShader, objComp, bushColor);
+            }
+        }
+        else if (activeSceneIndex == 8) {
+            if (placeAlternateToggle) {
+                objComp->add(std::make_shared<Translation>(worldPos));
+                objComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
+                objComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+                objComp->add(std::make_shared<Scale>(0.3f));
+                newObj = new DrawableObject(models[21], textureShader, objComp, glm::vec3(1.0f), ocTex);
+            }
+            else {
+                objComp->add(std::make_shared<Translation>(worldPos));
+                objComp->add(std::make_shared<Rotation>(glm::radians(rotAngle), glm::vec3(0.0f, 1.0f, 0.0f)));
+                objComp->add(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+                objComp->add(std::make_shared<Scale>(0.3f));
+                newObj = new DrawableObject(models[20], textureShader, objComp, glm::vec3(1.0f), tableTex);
+            }
+        }
+
+        if (newObj != nullptr) {
+            currentScene->addObject(newObj);
+            placeAlternateToggle = !placeAlternateToggle;
+            std::printf("Placed static object (ID: %u) at [%.3f, %.3f, %.3f]\n",
+                newObj->getID(), worldPos.x, worldPos.y, worldPos.z);
+        }
+        return;
+    }
+
+    if (activeMode == InteractionMode::PlaceMoving && camera != nullptr) {
+        if (!isSupportedScene) {
+            std::cout << "Moving object creation is enabled in scenes: 3 (Forest), 8 (Shrek), 9 (EB408)." << std::endl;
+            return;
+        }
+        if (depth >= 1.0f) {
+            std::cout << "Click on a surface or object, not on the skybox." << std::endl;
+            return;
+        }
+
+        glm::vec3 screenPos(static_cast<float>(x), static_cast<float>(newy), depth);
+        glm::mat4 view = camera->getViewMatrix();
+        glm::mat4 projection = camera->getProjectionMatrix();
+        glm::vec4 viewport(0.0f, 0.0f, static_cast<float>(fbW), static_cast<float>(fbH));
+        glm::vec3 worldPos = glm::unProject(screenPos, view, projection, viewport);
+
+        if (!hasFirstLinePoint) {
+            linePointA = worldPos;
+            hasFirstLinePoint = true;
+            std::printf("Point A set at [%.3f, %.3f, %.3f]. Click second point B...\n",
+                linePointA.x, linePointA.y, linePointA.z);
+        }
+        else {
+            glm::vec3 linePointB = worldPos;
+            hasFirstLinePoint = false;
+
+            auto moveTrans = std::make_shared<Translation>(linePointA);
+            auto objComp = std::make_shared<CompositeTransformation>();
+            objComp->add(moveTrans);
+
+            DrawableObject* movingObj = nullptr;
+            float moveSpeed = 1.5f;
+
+            if (activeSceneIndex == 2) {
+                objComp->add(std::make_shared<Scale>(0.42f));
+                movingObj = new DrawableObject(models[5], shaders[2], objComp, glm::vec3(1.0f, 0.35f, 0.15f));
+                moveSpeed = 1.8f;
+            }
+            else if (activeSceneIndex == 8) {
+                objComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+                objComp->add(std::make_shared<Scale>(0.25f));
+                movingObj = new DrawableObject(models[13], textureShader, objComp, glm::vec3(1.0f), shrekTex);
+                moveSpeed = 0.65f;
+            }
+            else {
+                objComp->add(std::make_shared<Scale>(0.42f));
+                movingObj = new DrawableObject(models[5], shaders[2], objComp, glm::vec3(0.2f, 0.85f, 1.0f));
+                moveSpeed = 1.8f;
+            }
+
+            currentScene->addObject(movingObj);
+
+            MovingObject mInfo;
+            mInfo.sceneIndex = activeSceneIndex;
+            mInfo.objectID = movingObj->getID();
+            mInfo.translation = moveTrans;
+            mInfo.pointA = linePointA;
+            mInfo.pointB = linePointB;
+            mInfo.t = 0.0f;
+            mInfo.speed = moveSpeed;
+            mInfo.direction = 1;
+            movingObjects.push_back(mInfo);
+
+            std::printf("Spawned moving model (ID: %u) between A[%.2f, %.2f, %.2f] and B[%.2f, %.2f, %.2f]\n",
+                movingObj->getID(),
+                linePointA.x, linePointA.y, linePointA.z,
+                linePointB.x, linePointB.y, linePointB.z);
+        }
+        return;
+    }
+
+    std::printf("Clicked on pixel %d, %d, color %02hhx%02hhx%02hhx%02hhx, depth %f, stencil index %u\n",
+        x, newy, color[0], color[1], color[2], color[3], depth, index);
+
+    if (index != 0) {
+        for (auto it = movingObjects.begin(); it != movingObjects.end(); ++it) {
+            if (it->sceneIndex == activeSceneIndex && it->objectID == index) {
+                currentScene->removeObjectByID(index);
+                movingObjects.erase(it);
+                std::cout << "Interaction: Moving model (ID: " << index << ") clicked and deleted!" << std::endl;
+                return;
+            }
+        }
+    }
+
+    currentScene->selectByID(index);
+    DrawableObject* selected = currentScene->getSelectedObject();
+    if (selected != nullptr) {
+        std::cout << "Selected object ID: " << selected->getID()
+            << " in scene [" << currentScene->getName() << "]" << std::endl;
+    }
+    else {
+        std::cout << "No object selected (background clicked)." << std::endl;
     }
 }
 
@@ -141,6 +360,7 @@ void Application::initialization() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
     window = glfwCreateWindow(windowWidth, windowHeight, "ZPG (ZHA0067)", nullptr, nullptr);
     if (!window) {
@@ -164,9 +384,9 @@ void Application::initialization() {
         std::cerr << "Failed to initialize GLAD" << std::endl;
         exit(EXIT_FAILURE);
     }
-    
+
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    
+
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL Version:   " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
@@ -179,6 +399,9 @@ void Application::initialization() {
 
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 }
 
 void Application::createShaders() {
@@ -211,10 +434,10 @@ void Application::createShaders() {
     treeShader = new ShaderProgram(vertTree, fragTree);
     shaders.push_back(treeShader);
 
-	Shader vertAmbient(GL_VERTEX_SHADER, "shaders/ambient.vert");
-	Shader fragAmbient(GL_FRAGMENT_SHADER, "shaders/ambient.frag");
-	ambientShader = new ShaderProgram(vertAmbient, fragAmbient);
-	shaders.push_back(ambientShader);
+    Shader vertAmbient(GL_VERTEX_SHADER, "shaders/ambient.vert");
+    Shader fragAmbient(GL_FRAGMENT_SHADER, "shaders/ambient.frag");
+    ambientShader = new ShaderProgram(vertAmbient, fragAmbient);
+    shaders.push_back(ambientShader);
 
     Shader vertLambert(GL_VERTEX_SHADER, "shaders/lambert.vert");
     Shader fragLambert(GL_FRAGMENT_SHADER, "shaders/lambert.frag");
@@ -224,7 +447,6 @@ void Application::createShaders() {
     Shader vertPhong(GL_VERTEX_SHADER, "shaders/phong.vert");
     Shader fragPhong(GL_FRAGMENT_SHADER, "shaders/phong.frag");
     phongShader = new ShaderProgram(vertPhong, fragPhong);
-
     shaders.push_back(phongShader);
 
     Shader vertBlinn(GL_VERTEX_SHADER, "shaders/blinn.vert");
@@ -237,10 +459,10 @@ void Application::createShaders() {
     blinnColorShader = new ShaderProgram(vertBlinnColor, fragBlinnColor);
     shaders.push_back(blinnColorShader);
 
-	Shader vertNight(GL_VERTEX_SHADER, "shaders/night_forest.vert");
-	Shader fragNight(GL_FRAGMENT_SHADER, "shaders/night_forest.frag");
-	nightShader = new ShaderProgram(vertNight, fragNight);
-	shaders.push_back(nightShader);
+    Shader vertNight(GL_VERTEX_SHADER, "shaders/night_forest.vert");
+    Shader fragNight(GL_FRAGMENT_SHADER, "shaders/night_forest.frag");
+    nightShader = new ShaderProgram(vertNight, fragNight);
+    shaders.push_back(nightShader);
 
     Shader vertTex(GL_VERTEX_SHADER, "shaders/texture.vert");
     Shader fragTex(GL_FRAGMENT_SHADER, "shaders/texture.frag");
@@ -318,7 +540,7 @@ GLuint loadCubemap(const std::vector<const char*>& faces) {
 void Application::createModels() {
     models.push_back(new Model(triangleVertices, sizeof(triangleVertices), 3));
     models.push_back(new Model(sphere, sizeof(sphere), 2880));
-    models.push_back(new Model(plain, sizeof(plain), 6));
+    models.push_back(new Model(plain, sizeof(plain), 6, false, true));
     models.push_back(new Model(tree, sizeof(tree), 92814));
     models.push_back(new Model(bushes, sizeof(bushes), 8730));
     models.push_back(new Model(gift, sizeof(gift), 66624));
@@ -329,7 +551,6 @@ void Application::createModels() {
     models.push_back(new Model(moon, sizeof(moon), 11520, true));
 
     models.push_back(new Model(clockModel, sizeof(clockModel), static_cast<GLsizei>(vertexCount), true));
-
     models.push_back(new Model(rocketModel, sizeof(rocketModel), static_cast<GLsizei>(vertexRocketCount), true));
 
     models.push_back(new Model(plain, sizeof(plain), 6, false, true));
@@ -337,8 +558,8 @@ void Application::createModels() {
     GLsizei shrekVerticesCount = static_cast<GLsizei>(sizeof(ShrekModel) / (8 * sizeof(float)));
     models.push_back(new Model(ShrekModel, sizeof(ShrekModel), shrekVerticesCount, false, true));
 
-	GLsizei fionaVerticesCount = static_cast<GLsizei>(sizeof(FionaModel) / (8 * sizeof(float)));
-	models.push_back(new Model(FionaModel, sizeof(FionaModel), fionaVerticesCount, false, true));
+    GLsizei fionaVerticesCount = static_cast<GLsizei>(sizeof(FionaModel) / (8 * sizeof(float)));
+    models.push_back(new Model(FionaModel, sizeof(FionaModel), fionaVerticesCount, false, true));
 
     models.push_back(new Model(CubeModel, sizeof(CubeModel), CubeVertexCount, false, true));
 
@@ -346,10 +567,8 @@ void Application::createModels() {
     models.push_back(new Model(SM_DoorFrame_vertices, sizeof(SM_DoorFrame_vertices), SM_DoorFrame_vertex_count, false, true));
     models.push_back(new Model(SM_Door_vertices, sizeof(SM_Door_vertices), SM_Door_vertex_count, false, true));
     models.push_back(new Model(SM_Whiteboard_vertices, sizeof(SM_Whiteboard_vertices), SM_Whiteboard_vertex_count, false, true));
-	models.push_back(new Model(SM_Table_vertices, sizeof(SM_Table_vertices), SM_Table_vertex_count, false, true));
-	models.push_back(new Model(OrangeChair_vertices, sizeof(OrangeChair_vertices), OrangeChair_vertex_count, false, true));
-
-
+    models.push_back(new Model(SM_Table_vertices, sizeof(SM_Table_vertices), SM_Table_vertex_count, false, true));
+    models.push_back(new Model(OrangeChair_vertices, sizeof(OrangeChair_vertices), OrangeChair_vertex_count, false, true));
 }
 
 void Application::addWatermark(Scene* scene) {
@@ -365,11 +584,12 @@ void Application::addWatermark(Scene* scene) {
         wmComp->add(std::make_shared<Rotation>(glm::radians(-18.5f), glm::vec3(1.0f, 0.0f, 0.0f)));
         wmComp->add(std::make_shared<Translation>(-4.0f, 3.5f, 0.0f));
         wmComp->add(std::make_shared<Scale>(0.6f, 0.6f, 0.001f));
-    } else if (name.find("Lighting") != std::string::npos || name.find("Models") != std::string::npos) {
+    }
+    else if (name.find("Lighting") != std::string::npos || name.find("Models") != std::string::npos) {
         wmComp->add(std::make_shared<Translation>(2.0f, -1.5f, 0.0f));
         wmComp->add(std::make_shared<Scale>(0.6f, 0.6f, 0.001f));
     }
-    else if (name.find("EB408 Model") != std::string::npos || name.find("EB408 Model") != std::string::npos){
+    else if (name.find("EB408 Model") != std::string::npos) {
         wmComp->add(std::make_shared<Translation>(-1.1f, 0.8f, 1.5f));
         wmComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         wmComp->add(std::make_shared<Scale>(0.15f, 0.15f, 0.001f));
@@ -401,7 +621,7 @@ void Application::createScenes() {
 
     addWatermark(scene1);
     scenes.push_back(scene1);
-    
+
     Scene* scene2 = new Scene("2: Sphere");
     auto sphereComp = std::make_shared<CompositeTransformation>();
     sphereComp->add(std::make_shared<Scale>(0.85f));
@@ -418,14 +638,9 @@ void Application::createScenes() {
     plainComp->add(std::make_shared<Scale>(15.0f, 1.0f, 15.0f));
     scene3->addObject(new DrawableObject(models[2], nightShader, plainComp, glm::vec3(0.18f, 0.38f, 0.16f)));
 
-    //auto forestSunComp = std::make_shared<CompositeTransformation>();
-    //forestSunComp->add(std::make_shared<Translation>(12.0f, 16.0f, -12.0f));
-    //forestSunComp->add(std::make_shared<Scale>(1.8f));
-    //scene3->addObject(new DrawableObject(models[1], shaders[2], forestSunComp, glm::vec3(1.0f, 0.95f, 0.25f)));
-
     auto getRandomFloat = [](float minVal, float maxVal) -> float {
         return minVal + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (maxVal - minVal)));
-    };
+        };
 
     const int treeCount = 85;
     for (int i = 0; i < treeCount; ++i) {
@@ -481,7 +696,6 @@ void Application::createScenes() {
     forestClock1->add(std::make_shared<Rotation>(glm::radians(25.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
     forestClock1->add(std::make_shared<Scale>(1.1f, 1.1f, -1.1f));
     scene3->addObject(new DrawableObject(models[10], clockShader, forestClock1));
-
 
     auto forestClock2 = std::make_shared<CompositeTransformation>();
     forestClock2->add(std::make_shared<Translation>(3.5f, 2.3f, -2.5f));
@@ -545,12 +759,12 @@ void Application::createScenes() {
 
     addWatermark(scene5);
     scenes.push_back(scene5);
-    
+
     Scene* scene6 = new Scene("6: Clock");
     auto clockComp = std::make_shared<CompositeTransformation>();
     clockComp->add(std::make_shared<Scale>(1.15f, 1.15f, -1.15f));
     scene6->addObject(new DrawableObject(models[10], clockShader, clockComp));
-    
+
     addWatermark(scene6);
     scenes.push_back(scene6);
 
@@ -576,26 +790,14 @@ void Application::createScenes() {
     rightComp->add(std::make_shared<Scale>(0.65f));
     scene7->addObject(new DrawableObject(models[1], phongShader, rightComp));
 
-	addWatermark(scene7);
+    addWatermark(scene7);
     scenes.push_back(scene7);
-
-    //GLuint fenceTex = loadTexture("textures/wooden_fence.png");
-
-    //Scene* scene8 = new Scene("Fence Scene");
-    //auto comp = std::make_shared<CompositeTransformation>();
-
-    //scene8->addObject(new DrawableObject(models[12], textureShader, comp, glm::vec3(1.0f), fenceTex));
-    //scenes.push_back(scene8);
 
     Scene* scene8 = new Scene("8: Shrek Scene");
 
-	GLuint shrekTex = loadTexture("textures/shrek.png");
-	GLuint fionaTex = loadTexture("textures/fiona.png");
-
-    //auto groundComp = std::make_shared<CompositeTransformation>();
-    //groundComp->add(std::make_shared<Translation>(0.0f, -1.0f, 0.0f));
-    //groundComp->add(std::make_shared<Scale>(10.0f, 1.0f, 10.0f));
-    //scene9->addObject(new DrawableObject(models[2], nightShader, groundComp, glm::vec3(0.12f, 0.32f, 0.10f)));
+    GLuint shrekTex = loadTexture("textures/shrek.png");
+    GLuint fionaTex = loadTexture("textures/fiona.png");
+    GLuint grassTex = loadTexture("textures/grass.png");
 
     std::vector<const char*> skyboxFaces = {
         "textures/posx.jpg",
@@ -607,6 +809,10 @@ void Application::createScenes() {
     };
     skyboxTex = loadCubemap(skyboxFaces);
 
+    auto groundComp = std::make_shared<CompositeTransformation>();
+    groundComp->add(std::make_shared<Translation>(0.0f, -1.0f, 0.0f));
+    groundComp->add(std::make_shared<Scale>(15.0f, 1.0f, 15.0f));
+
     auto shrekComp = std::make_shared<CompositeTransformation>();
     shrekComp->add(std::make_shared<Translation>(0.0f, -1.0f, 0.0f));
     shrekComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -617,8 +823,10 @@ void Application::createScenes() {
     fionaComp->add(std::make_shared<Rotation>(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
     fionaComp->add(std::make_shared<Scale>(0.75f));
 
+    scene8->addObject(new DrawableObject(models[12], textureShader, groundComp, glm::vec3(1.0f), grassTex));
     scene8->addObject(new DrawableObject(models[13], textureShader, shrekComp, glm::vec3(1.0f), shrekTex));
     scene8->addObject(new DrawableObject(models[14], textureShader, fionaComp, glm::vec3(1.0f), fionaTex));
+
     addWatermark(scene8);
     scenes.push_back(scene8);
 
@@ -660,11 +868,11 @@ void Application::createScenes() {
     shrekebComp->add(std::make_shared<Scale>(0.3f));
 
     GLuint ebTex = loadTexture("textures/T_EB408.png");
-	GLuint doorTex = loadTexture("textures/T_door_basecolor.png");
+    GLuint doorTex = loadTexture("textures/T_door_basecolor.png");
     GLuint wbTex = loadTexture("textures/T_Whiteboard_BaseColor.png");
-	GLuint tableTex = loadTexture("textures/T_Table_BaseColor.png");
-	GLuint ocTex = loadTexture("textures/T_OrangeChair_BaseColor.png");
-    GLuint shrekebTex = loadTexture("textures/shrek.png");
+    tableTex = loadTexture("textures/T_Table_BaseColor.png");
+    ocTex = loadTexture("textures/T_OrangeChair_BaseColor.png");
+    shrekebTex = loadTexture("textures/shrek.png");
 
     scene9->addObject(new DrawableObject(models[16], textureShader, ebComp, glm::vec3(1.0f), ebTex));
     scene9->addObject(new DrawableObject(models[17], textureShader, doorFrameComp, glm::vec3(1.0f), doorTex));
@@ -672,15 +880,15 @@ void Application::createScenes() {
     scene9->addObject(new DrawableObject(models[19], textureShader, wbComp, glm::vec3(1.0f), wbTex));
     scene9->addObject(new DrawableObject(models[13], textureShader, shrekebComp, glm::vec3(1.0f), shrekebTex));
 
-    const int numRows = 3; 
+    const int numRows = 3;
     const int tablesPerRow = 3;
 
     const float startX = -0.45f;
     const float startZ = 0.35f;
 
-    const float stepX = 0.5f;  
-    const float stepZ = 0.45f;  
-    
+    const float stepX = 0.5f;
+    const float stepZ = 0.45f;
+
     const float chairOffsetX = 0.18f;
     const float chairOffsetZ = 0.0f;
 
@@ -705,7 +913,6 @@ void Application::createScenes() {
         }
     }
 
-   
     addWatermark(scene9);
     scenes.push_back(scene9);
 }
@@ -723,20 +930,19 @@ void Application::processInput() {
         camera->moveRight(cameraSpeed);
 }
 
-
 void Application::run() {
     glEnable(GL_DEPTH_TEST);
-
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     while (!glfwWindowShouldClose(window)) {
-
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         processInput();
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         float time = currentFrame;
         if (triRotLocal) triRotLocal->setAngle(time * 1.5f);
@@ -780,9 +986,22 @@ void Application::run() {
             nightShader->setUniform("constantAttenuation", 1.0f);
             nightShader->setUniform("linearAttenuation", 0.09f);
             nightShader->setUniform("quadraticAttenuation", 0.032f);
+        } 
+        else if (activeSceneIndex == 7 && nightShader != nullptr) {
+            nightShader->use();
+
+            nightShader->setUniform("lightPosition", glm::vec3(2.0f, 8.0f, 6.0f));
+            nightShader->setUniform("lightColor", glm::vec3(1.0f, 1.0f, 0.95f) * 2.2f);
+            nightShader->setUniform("cameraPosition", camera->getPosition());
+
+            nightShader->setUniform("constantAttenuation", 1.0f);
+            nightShader->setUniform("linearAttenuation", 0.05f);
+            nightShader->setUniform("quadraticAttenuation", 0.01f);
         }
-        if (activeSceneIndex == 7 && skyboxShader != nullptr) {
+
+        if ((activeSceneIndex == 7 || activeSceneIndex == 8) && skyboxShader != nullptr) {
             glDepthFunc(GL_LEQUAL);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
             skyboxShader->use();
             glActiveTexture(GL_TEXTURE0);
@@ -792,20 +1011,33 @@ void Application::run() {
             models[15]->draw();
 
             glDepthFunc(GL_LESS);
-		}
-		else if (activeSceneIndex == 8 && skyboxShader != nullptr) {
-			glDepthFunc(GL_LEQUAL);
-			skyboxShader->use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
-			skyboxShader->setUniform("skybox", 0);
-			models[15]->draw();
-			glDepthFunc(GL_LESS);
-		}
+        }
+
+        for (MovingObject& mObj : movingObjects) {
+            if (mObj.sceneIndex != activeSceneIndex || !mObj.translation) continue;
+
+            float dist = glm::distance(mObj.pointA, mObj.pointB);
+            float step = (dist > 0.0001f) ? (mObj.speed * deltaTime / dist) : 0.0f;
+            mObj.t += static_cast<float>(mObj.direction) * step;
+
+            if (mObj.t >= 1.0f) {
+                mObj.t = 1.0f;
+                mObj.direction = -1;
+            }
+            else if (mObj.t <= 0.0f) {
+                mObj.t = 0.0f;
+                mObj.direction = 1;
+            }
+
+            glm::vec3 pos = mObj.pointA + mObj.t * (mObj.pointB - mObj.pointA);
+            mObj.translation->setPosition(pos);
+        }
 
         if (activeSceneIndex < scenes.size() && scenes[activeSceneIndex] != nullptr) {
             scenes[activeSceneIndex]->render();
         }
+
+        performPicking();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -819,7 +1051,7 @@ void Application::handleKeyboard(int key, int action) {
         }
         else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9) {
             size_t idx = static_cast<size_t>(key - GLFW_KEY_1);
-            if (camera) {
+            if (camera && idx < scenes.size()) {
                 activeSceneIndex = idx;
                 std::cout << "Switched to scene: " << scenes[idx]->getName() << std::endl;
                 if (idx == 5) {
@@ -837,7 +1069,7 @@ void Application::handleKeyboard(int key, int action) {
                 else {
                     camera->setPosition(glm::vec3(0.0f, 0.0f, 2.5f));
                     camera->setOrientation(glm::radians(90.0f), glm::radians(-90.0f));
-                } 
+                }
             }
         }
         else if (key == GLFW_KEY_P) {
@@ -847,6 +1079,21 @@ void Application::handleKeyboard(int key, int action) {
         else if (key == GLFW_KEY_O) {
             camera->setProjectionType(ProjectionType::Orthogonal);
             std::cout << "Change projection: Orthogonal" << std::endl;
+        }
+        else if (key == GLFW_KEY_I) {
+            interactionMode = InteractionMode::Select;
+            hasFirstLinePoint = false;
+            std::cout << "Mode: Select / Delete" << std::endl;
+        }
+        else if (key == GLFW_KEY_B) {
+            interactionMode = InteractionMode::PlaceStatic;
+            hasFirstLinePoint = false;
+            std::cout << "Mode: Place static object" << std::endl;
+        }
+        else if (key == GLFW_KEY_M) {
+            interactionMode = InteractionMode::PlaceMoving;
+            hasFirstLinePoint = false;
+            std::cout << "Mode: Place moving model" << std::endl;
         }
     }
 }

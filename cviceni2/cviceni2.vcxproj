@@ -252,6 +252,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\fiona.png" />
+    <Image Include="textures\grass.png" />
     <Image Include="textures\negx.jpg" />
     <Image Include="textures\negy.jpg" />
     <Image Include="textures\negz.jpg" />

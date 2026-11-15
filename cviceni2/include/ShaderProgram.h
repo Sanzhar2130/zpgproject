@@ -28,7 +28,6 @@ public:
     void use() const;
     GLuint getId() const;
 
-    // Interface implementation Observer: automatic receipt of matrices from Camera
     void update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
 
     void setUniform(const std::string& name, float value) const;
