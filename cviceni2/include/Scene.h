@@ -20,6 +20,9 @@ public:
     Scene(const std::string& sceneName);
     ~Scene();
 
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
+
     void addObject(DrawableObject* object);
     bool removeObjectByID(GLuint id);
     void render() const;

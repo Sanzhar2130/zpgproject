@@ -28,6 +28,7 @@ private:
     float aspect;
     float zNear;
     float zFar;
+    float orthoHalfHeight;
     ProjectionType projType;
 
     glm::mat4 viewMatrix;
@@ -35,6 +36,9 @@ private:
 
     std::vector<Observer*> observers;
 
+    void computeVectors();
+    void computeView();
+    void computeProjection();
     void updateVectors();
     void updateProjection();
     void updateView();
@@ -58,7 +62,7 @@ public:
 
     void setAspect(float newAspect);
     void setProjectionType(ProjectionType type);
-
+    void setPose(const glm::vec3& newEye, float newAlpha, float newFi);
 
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;

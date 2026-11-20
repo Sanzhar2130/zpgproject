@@ -6,8 +6,6 @@
 #pragma once
 #include <glm/glm.hpp>
 
-class Camera;
-
 class Observer {
 public:
     virtual ~Observer() = default;

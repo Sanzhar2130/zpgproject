@@ -5,6 +5,8 @@
  */
 #include "Camera.h"
 #include <algorithm>
+#include <cmath>
+#include <glm/gtc/constants.hpp>
 
 Camera::Camera(glm::vec3 startEye, float startAlpha, float startFi, float screenAspect)
     : eye(startEye),
@@ -12,42 +14,65 @@ Camera::Camera(glm::vec3 startEye, float startAlpha, float startFi, float screen
     fi(startFi),
     up(glm::vec3(0.0f, 1.0f, 0.0f)),
     fov(glm::radians(60.0f)),
-    aspect(screenAspect),
+    aspect((screenAspect > 0.0f) ? screenAspect : (4.0f / 3.0f)),
     zNear(0.1f),
     zFar(100.0f),
-    projType(ProjectionType::Perspective)
+    orthoHalfHeight(5.0f),
+    projType(ProjectionType::Perspective),
+    viewMatrix(1.0f),
+    projectionMatrix(1.0f)
 {
-    updateVectors();
-    updateProjection();
-}
-
-void Camera::updateVectors() {
-    target.x = sin(alpha) * cos(fi);
-    target.z = sin(alpha) * sin(fi);
-    target.y = cos(alpha);
-
-    target = glm::normalize(target);
-    updateView();
-}
-
-void Camera::updateView() {
-    viewMatrix = glm::lookAt(eye, eye + target, up);
+    computeVectors();
+    computeView();
+    computeProjection();
     notify();
 }
 
-void Camera::updateProjection() {
+void Camera::computeVectors() {
+    target.x = std::sin(alpha) * std::cos(fi);
+    target.z = std::sin(alpha) * std::sin(fi);
+    target.y = std::cos(alpha);
+
+    target = glm::normalize(target);
+}
+
+void Camera::computeView() {
+    viewMatrix = glm::lookAt(eye, eye + target, up);
+}
+
+void Camera::computeProjection() {
     if (projType == ProjectionType::Perspective) {
         projectionMatrix = glm::perspective(fov, aspect, zNear, zFar);
     }
     else {
-        float orthoSize = 5.0f;
-        projectionMatrix = glm::ortho(-orthoSize * aspect, orthoSize * aspect, -orthoSize, orthoSize, zNear, zFar);
+        projectionMatrix = glm::ortho(
+            -orthoHalfHeight * aspect,
+            orthoHalfHeight * aspect,
+            -orthoHalfHeight,
+            orthoHalfHeight,
+            zNear,
+            zFar
+        );
     }
+}
+
+void Camera::updateVectors() {
+    computeVectors();
+    updateView();
+}
+
+void Camera::updateView() {
+    computeView();
+    notify();
+}
+
+void Camera::updateProjection() {
+    computeProjection();
     notify();
 }
 
 void Camera::attach(Observer* observer) {
-    if (observer) {
+    if (observer && std::find(observers.begin(), observers.end(), observer) == observers.end()) {
         observers.push_back(observer);
         observer->update(viewMatrix, projectionMatrix);
     }
@@ -106,8 +131,22 @@ void Camera::setAspect(float newAspect) {
 }
 
 void Camera::setProjectionType(ProjectionType type) {
-    projType = type;
-    updateProjection();
+    if (projType != type) {
+        projType = type;
+        updateProjection();
+    }
+}
+
+void Camera::setPose(const glm::vec3& newEye, float newAlpha, float newFi) {
+    eye = newEye;
+    alpha = newAlpha;
+    fi = newFi;
+
+    const float eps = 0.01f;
+    if (alpha < eps) alpha = eps;
+    if (alpha > glm::pi<float>() - eps) alpha = glm::pi<float>() - eps;
+
+    updateVectors();
 }
 
 glm::mat4 Camera::getViewMatrix() const { return viewMatrix; }

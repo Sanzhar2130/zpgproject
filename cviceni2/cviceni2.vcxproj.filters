@@ -144,6 +144,36 @@
     <ClInclude Include="models\table.h">
       <Filter>models</Filter>
     </ClInclude>
+    <ClInclude Include="include\TextureLoader.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ModelFactory.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ShaderFactory.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SceneFactory.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MovingObjectController.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ScenePicker.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\InputController.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AnimationController.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LightController.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SkyboxRenderer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\vertex_color.vert">
@@ -266,6 +296,36 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\Translation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextureLoader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ModelFactory.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ShaderFactory.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SceneFactory.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MovingObjectController.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\InputController.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AnimationController.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LightController.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SkyboxRenderer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ScenePicker.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
